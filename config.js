@@ -1,13 +1,11 @@
 // BlackIP360 Présences — Configuration DEV
-// ⚠️  ACTION REQUISE : remplacer CLIENT_ID et TENANT_ID
-//     Voir : https://portal.azure.com → Azure Active Directory → App registrations
-// 🔧  ENVIRONNEMENT : Développement (liste SharePoint _Dev, URL GitHub Pages dev)
+// Liste SharePoint : Presences_Employes_Dev (séparée de la prod)
 
 const CONFIG = {
 
   // ── Azure AD ──────────────────────────────────────────────────────────────
-  CLIENT_ID: 'VOTRE_CLIENT_ID',    // Application (client) ID dans Azure AD
-  TENANT_ID: 'VOTRE_TENANT_ID',    // Directory (tenant) ID dans Azure AD
+  CLIENT_ID: 'bfd6cf51-c194-4541-aa4d-2f9328b1c88a',  // BIP360-Presences_Employes
+  TENANT_ID: '3f3b2d7b-6be5-45ab-bb9b-05c1a7e11c38',  // Les Solutions Blackip360 Inc.
 
   // ── Hébergement ───────────────────────────────────────────────────────────
   APP_URL: 'https://blackip360tech.github.io/presences-blackip360-dev',
