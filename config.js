@@ -1,6 +1,7 @@
-// BlackIP360 Présences — Configuration
-// ⚠️  ACTION REQUISE avant déploiement : remplacer CLIENT_ID et TENANT_ID
+// BlackIP360 Présences — Configuration DEV
+// ⚠️  ACTION REQUISE : remplacer CLIENT_ID et TENANT_ID
 //     Voir : https://portal.azure.com → Azure Active Directory → App registrations
+// 🔧  ENVIRONNEMENT : Développement (liste SharePoint _Dev, URL GitHub Pages dev)
 
 const CONFIG = {
 
@@ -9,12 +10,12 @@ const CONFIG = {
   TENANT_ID: 'VOTRE_TENANT_ID',    // Directory (tenant) ID dans Azure AD
 
   // ── Hébergement ───────────────────────────────────────────────────────────
-  APP_URL: 'https://YOUR_GITHUB_USERNAME.github.io/presences-blackip360',
+  APP_URL: 'https://YOUR_GITHUB_USERNAME.github.io/presences-blackip360-dev',
 
   // ── SharePoint ────────────────────────────────────────────────────────────
   SHAREPOINT_HOST:      'blackip360.sharepoint.com',
   SHAREPOINT_SITE_PATH: '/sites/PlanificationTI',
-  SHAREPOINT_LIST:      'Presences_Employes',
+  SHAREPOINT_LIST:      'Presences_Employes_Dev',  // Liste de test séparée
 
   // ── Graph API ─────────────────────────────────────────────────────────────
   GRAPH_BASE: 'https://graph.microsoft.com/v1.0',
