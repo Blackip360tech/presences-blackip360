@@ -9,27 +9,15 @@ const App = {
 
   // ── Initialisation ────────────────────────────────────────────────────────
   async init() {
-    const dbg = document.getElementById('loginError');
-    const step = (msg) => { if (dbg) { dbg.hidden = false; dbg.textContent = '⏳ ' + msg; } console.log('[APP]', msg); };
-
-    step('Démarrage...');
     try {
-      step('Auth.init() en cours...');
       await Auth.init();
-      step(`Auth.init() terminé — connecté: ${Auth.isLoggedIn()} — erreur: ${Auth.initError?.errorCode || 'non'}`);
-
-      this._msalAccounts = Auth.msal?.getAllAccounts()?.map(a => a.username) || [];
-
       if (Auth.isLoggedIn()) {
-        step('Connecté ! Chargement de l\'application...');
         await this._onLoginSuccess();
-      } else {
-        this._showDebug();
+      } else if (Auth.initError) {
+        this._showLoginError('Erreur de connexion : ' + (Auth.initError.errorCode || Auth.initError.message || 'inconnue'));
       }
     } catch (err) {
-      if (dbg) { dbg.hidden = false; dbg.style.background = '#fff0f0'; dbg.textContent = '❌ ERREUR JS: ' + err.message; }
-      console.error('[APP] init error:', err);
-      this._fatalError('Erreur d\'initialisation: ' + err.message);
+      this._fatalError('Erreur d\'initialisation : ' + err.message);
     }
   },
 
@@ -38,33 +26,8 @@ const App = {
     if (el) { el.innerHTML = html; el.hidden = false; }
   },
 
-  _showDebug() {
-    const params  = Object.fromEntries(new URLSearchParams(window.location.search));
-    const hash    = window.location.hash;
-    const lsAll   = Object.keys(localStorage);
-    const ssAll   = Object.keys(sessionStorage);
-    const errInfo = Auth.initError
-      ? `${Auth.initError.errorCode}: ${Auth.initError.errorMessage}`
-      : '(aucune)';
-    const el = document.getElementById('loginError');
-    if (!el) return;
-    el.hidden = false;
-    el.style.textAlign = 'left';
-    el.innerHTML = `
-      <strong>Debug MSAL — copiez ce bloc</strong><br><br>
-      Erreur init: <code>${errInfo}</code><br>
-      URL params: <code>${JSON.stringify(params)}</code><br>
-      Hash: <code>${hash || '(vide)'}</code><br>
-      Comptes MSAL: <code>${JSON.stringify(this._msalAccounts)}</code><br>
-      localStorage (${lsAll.length} clés): <code style="word-break:break-all">${lsAll.join(' | ') || '(vide)'}</code><br>
-      sessionStorage (${ssAll.length} clés): <code style="word-break:break-all">${ssAll.join(' | ') || '(vide)'}</code><br>
-      Cookies activés: <code>${navigator.cookieEnabled}</code>
-    `;
-  },
-
   async _onLoginSuccess() {
     this.user = Auth.getUser();
-    console.log('[APP] _onLoginSuccess user:', this.user);
 
     try {
       const profile        = await Graph.getProfile();
@@ -72,10 +35,8 @@ const App = {
       this.user.jobTitle   = profile.jobTitle    || '';
       this.user.email      = profile.mail        || this.user.email;
       this.user.name       = profile.displayName || this.user.name;
-      console.log('[APP] profil Graph OK:', this.user.name);
     } catch (err) {
       this.user.department = 'Non défini';
-      console.warn('[APP] Graph.getProfile() échec:', err.message);
     }
 
     // Département + permissions depuis Soldes_Conges (source de vérité)
@@ -85,7 +46,6 @@ const App = {
       this._userSolde = solde;
       if (solde.departement) {
         this.user.department = solde.departement;
-        console.log('[APP] département override Soldes:', solde.departement);
       }
     } catch (err) { /* pas bloquant */ }
 
