@@ -166,6 +166,7 @@ const App = {
     switch (tabId) {
       case 'statut': return this._loadMonStatut();
       case 'demandes': return this._loadDemandes();
+      case 'rapport': return this._loadRapport();
       case 'admin':  return this._loadAdmin();
       case 'tv':     return this._loadTV();
       case 'paye':   return this._loadPaye();
@@ -622,6 +623,201 @@ const App = {
     } catch (err) {
       wrap.innerHTML = `<div class="error">Erreur : ${err.message}</div>`;
     }
+  },
+
+  // ── MON RAPPORT ───────────────────────────────────────────────────────────
+  _loadRapport() {
+    const el = document.getElementById('tab-rapport');
+    const today = new Date();
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const fmt = d => d.toISOString().slice(0, 10);
+
+    el.innerHTML = `
+      <div class="paye-header">
+        <div class="paye-title">
+          <h2>📊 Mon rapport personnel</h2>
+          <div class="sub">Consultez votre historique de pointages, vos heures travaillées et vos congés</div>
+        </div>
+        <div class="paye-actions">
+          <button class="btn-primary" id="rapExport">⬇ Exporter CSV</button>
+          <button class="btn-secondary" id="rapPrint">🖨 Imprimer</button>
+        </div>
+      </div>
+
+      <div class="paye-filters">
+        <div class="field">
+          <label>Du</label>
+          <input type="date" id="rapFrom" value="${fmt(monthStart)}">
+        </div>
+        <div class="field">
+          <label>Au</label>
+          <input type="date" id="rapTo" value="${fmt(today)}">
+        </div>
+        <div class="field">
+          <label>Action</label>
+          <button class="btn-primary" id="rapCalc">Générer mon rapport</button>
+        </div>
+      </div>
+
+      <div id="rapResult"></div>
+    `;
+
+    document.getElementById('rapCalc').onclick   = () => this._computeRapport();
+    document.getElementById('rapExport').onclick = () => this._exportRapport();
+    document.getElementById('rapPrint').onclick  = () => window.print();
+
+    this._computeRapport();
+  },
+
+  async _computeRapport() {
+    const result = document.getElementById('rapResult');
+    result.innerHTML = '<div class="loading">Chargement de votre rapport…</div>';
+
+    const fromStr = document.getElementById('rapFrom').value;
+    const toStr   = document.getElementById('rapTo').value;
+    const from = new Date(fromStr + 'T00:00:00');
+    const to   = new Date(toStr   + 'T23:59:59');
+
+    try {
+      const [history, solde, demandes] = await Promise.all([
+        Graph.getMyPresences(this.user.email),
+        Graph.getSolde(this.user.email).catch(() => ({ vacances: 0, maladie: 0 })),
+        Graph.getMesDemandes(this.user.email).catch(() => []),
+      ]);
+
+      const filtered = history.filter(p => {
+        if (!p.HeurePointage) return false;
+        const d = new Date(p.HeurePointage);
+        return d >= from && d <= to;
+      });
+
+      const byDay = {};
+      for (const p of filtered) {
+        const key = p.HeurePointage.slice(0, 10);
+        if (!byDay[key]) byDay[key] = [];
+        byDay[key].push(p);
+      }
+
+      const daysWithPresent = Object.entries(byDay).filter(([_, entries]) =>
+        entries.some(e => CONFIG.STATUTS.find(s => s.label === e.StatutActuel)?.category === 'present')
+      ).length;
+      const heuresEstimees = daysWithPresent * 8;
+
+      const demandesApprouvees = demandes.filter(d => {
+        if (d.Statut !== 'Approuvée') return false;
+        const dStart = new Date(d.DateDebut);
+        const dEnd   = new Date(d.DateFin);
+        return dEnd >= from && dStart <= to;
+      });
+      const hVac = demandesApprouvees.filter(d => d.TypeConge === 'Vacances').reduce((s, d) => s + (d.NombreHeures || 0), 0);
+      const hMal = demandesApprouvees.filter(d => d.TypeConge === 'Maladie').reduce((s, d) => s + (d.NombreHeures || 0), 0);
+
+      const days = [];
+      for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) days.push(new Date(d));
+
+      this._rapData = { from, to, byDay, days, solde, demandesApprouvees };
+
+      result.innerHTML = `
+        <div class="stat-row" style="margin-bottom:20px">
+          <div class="stat-card blue"><div class="stat-l">Jours travaillés</div><div class="stat-n">${daysWithPresent}</div></div>
+          <div class="stat-card green"><div class="stat-l">Heures estimées</div><div class="stat-n">${heuresEstimees}</div></div>
+          <div class="stat-card yellow"><div class="stat-l">🌴 Solde vacances</div><div class="stat-n">${solde.vacances} h</div></div>
+          <div class="stat-card red"><div class="stat-l">🤒 Solde maladie</div><div class="stat-n">${solde.maladie} h</div></div>
+          <div class="stat-card purple"><div class="stat-l">Vacances prises</div><div class="stat-n">${hVac} h</div></div>
+        </div>
+
+        <h3>📅 Détail par jour</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Pointages</th>
+                <th style="text-align:center">Heures</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${days.map(d => {
+                const key = d.toISOString().slice(0, 10);
+                const entries = (byDay[key] || []).slice().sort((a,b) => new Date(a.HeurePointage) - new Date(b.HeurePointage));
+                const hasPresent = entries.some(e => CONFIG.STATUTS.find(s => s.label === e.StatutActuel)?.category === 'present');
+                const hours = hasPresent ? 8 : 0;
+                const dayLabel = d.toLocaleDateString('fr-CA', { weekday: 'long', day: 'numeric', month: 'short' });
+                const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                return `
+                  <tr${isWeekend ? ' style="opacity:.55"' : ''}>
+                    <td><strong>${dayLabel}</strong></td>
+                    <td>${entries.length ? entries.map(e => {
+                      const st = CONFIG.STATUTS.find(s => s.label === e.StatutActuel);
+                      return `<span class="status-pill" style="margin-right:6px;margin-bottom:4px;display:inline-flex">${st?.icon || '❓'} ${e.StatutActuel} <span class="muted" style="margin-left:6px">${this._fmtTime(e.HeurePointage)}</span></span>`;
+                    }).join('') : '<span class="muted">—</span>'}</td>
+                    <td style="text-align:center;font-family:var(--mono);font-weight:700;color:${hours ? 'var(--primary)' : 'var(--muted)'}">${hours}</td>
+                  </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        ${demandesApprouvees.length ? `
+          <h3 style="margin-top:24px">🏖️ Mes congés approuvés dans cette période</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Type</th><th>Du</th><th>Au</th><th style="text-align:center">Heures</th></tr></thead>
+              <tbody>
+                ${demandesApprouvees.map(d => {
+                  const tc = CONFIG.TYPES_CONGE.find(t => t.label === d.TypeConge);
+                  return `
+                    <tr>
+                      <td>${tc?.icon || ''} <strong>${d.TypeConge}</strong></td>
+                      <td>${this._fmtDate(d.DateDebut)}</td>
+                      <td>${this._fmtDate(d.DateFin)}</td>
+                      <td style="text-align:center;font-family:var(--mono)">${d.NombreHeures || 0}</td>
+                    </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        ` : ''}
+      `;
+    } catch (err) {
+      result.innerHTML = `<div class="error">Erreur : ${err.message}</div>`;
+    }
+  },
+
+  _exportRapport() {
+    if (!this._rapData) return this.showToast('Générez d\'abord le rapport.', 'error');
+    const { days, byDay, demandesApprouvees, solde } = this._rapData;
+    const rows = [
+      ['Rapport personnel — ' + (this.user.name || this.user.email)],
+      ['Période', document.getElementById('rapFrom').value + ' au ' + document.getElementById('rapTo').value],
+      ['Solde vacances', solde.vacances + ' h'],
+      ['Solde maladie',  solde.maladie  + ' h'],
+      [],
+      ['Date', 'Jour', 'Statut', 'Heure pointage', 'Heures estimées'],
+    ];
+    for (const d of days) {
+      const key = d.toISOString().slice(0, 10);
+      const entries = (byDay[key] || []).slice().sort((a,b) => new Date(a.HeurePointage) - new Date(b.HeurePointage));
+      const hasPresent = entries.some(e => CONFIG.STATUTS.find(s => s.label === e.StatutActuel)?.category === 'present');
+      const hours = hasPresent ? 8 : 0;
+      const dayName = d.toLocaleDateString('fr-CA', { weekday: 'long' });
+      if (!entries.length) {
+        rows.push([key, dayName, '', '', hours]);
+      } else {
+        entries.forEach((e, i) => {
+          rows.push([key, dayName, e.StatutActuel, this._fmtTime(e.HeurePointage), i === 0 ? hours : '']);
+        });
+      }
+    }
+    if (demandesApprouvees.length) {
+      rows.push([]);
+      rows.push(['Congés approuvés dans la période']);
+      rows.push(['Type', 'Du', 'Au', 'Heures']);
+      for (const d of demandesApprouvees) {
+        rows.push([d.TypeConge, this._fmtDate(d.DateDebut), this._fmtDate(d.DateFin), d.NombreHeures || 0]);
+      }
+    }
+    this._downloadCSV(rows, `mon_rapport_${this._today()}.csv`);
   },
 
   // ── ADMIN ─────────────────────────────────────────────────────────────────
