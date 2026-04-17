@@ -87,7 +87,7 @@ const App = {
 
   _checkAdmin() {
     // Admins : département Direction ou liste explicite
-    const adminEmails = ['admin@blackip360.com', 'tech@blackip360.com', 'tfournier@blackip360.com'];
+    const adminEmails = ['admin@blackip360.com', 'tech@blackip360.com', 'tfournier@blackip360.com', 'sstemarie@blackip360.com'];
     this.isAdmin =
       adminEmails.includes(this.user.email?.toLowerCase()) ||
       this.user.department === 'Direction';
