@@ -1256,7 +1256,11 @@ const App = {
         const initials = (r.emp.nom || '?').split(' ').map(x => x[0]).slice(0,2).join('').toUpperCase();
         const pills = r.dayStates.map(s => {
           const cls = 'day-pill day-' + s.type;
-          const txt = s.type === 'present' ? '8' : s.type === 'absent' ? '·' : s.type === 'weekend' ? '' : '—';
+          let txt;
+          if (s.type === 'present') txt = s.hours > 0 ? (s.hours % 1 === 0 ? String(s.hours) : s.hours.toFixed(1)) : '…';
+          else if (s.type === 'absent')  txt = '·';
+          else if (s.type === 'weekend') txt = '';
+          else txt = '—';
           return `<td class="day${s.type === 'weekend' ? ' day-we' : ''}"><span class="${cls}">${txt}</span></td>`;
         }).join('');
         return `
@@ -1320,7 +1324,8 @@ const App = {
         </div>
 
         <div class="paye-legend">
-          <span><span class="day-pill day-present">8</span> Présent</span>
+          <span><span class="day-pill day-present">7.5</span> Heures travaillées</span>
+          <span><span class="day-pill day-present">…</span> Journée en cours (pas fermée)</span>
           <span><span class="day-pill day-absent">·</span> Absent</span>
           <span><span class="day-pill day-none">—</span> Aucune donnée</span>
           <span><span class="day-pill day-weekend"></span> Fin de semaine</span>
