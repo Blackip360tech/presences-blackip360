@@ -35,12 +35,17 @@ class GraphAPI {
     return d.id;
   }
 
-  async _listIdCached() {
-    if (this._listId) return this._listId;
+  async _listIdForName(listName) {
+    this._listCache = this._listCache || {};
+    if (this._listCache[listName]) return this._listCache[listName];
     const sid = await this._siteIdCached();
-    const d   = await this._call(`/sites/${sid}/lists/${CONFIG.SHAREPOINT_LIST}`);
-    this._listId = d.id;
+    const d   = await this._call(`/sites/${sid}/lists/${listName}`);
+    this._listCache[listName] = d.id;
     return d.id;
+  }
+
+  async _listIdCached() {
+    return this._listIdForName(CONFIG.SHAREPOINT_LIST);
   }
 
   // ── Profil de l'utilisateur connecté ─────────────────────────────────────
@@ -102,6 +107,108 @@ class GraphAPI {
           HeurePointage: new Date().toISOString(),
           Notes:         notes || '',
         },
+      }),
+    });
+  }
+
+  // ── SOLDES DE CONGÉS ──────────────────────────────────────────────────────
+  async getSolde(email) {
+    const sid = await this._siteIdCached();
+    const lid = await this._listIdForName(CONFIG.SHAREPOINT_LIST_SOLDES);
+    const filter = encodeURIComponent(`fields/EmployeEmail eq '${email}'`);
+    const d = await this._call(`/sites/${sid}/lists/${lid}/items?$filter=${filter}&$expand=fields&$top=1`);
+    const item = d.value?.[0];
+    if (!item) return { vacances: 0, maladie: 0, email };
+    return {
+      id:       item.id,
+      email:    item.fields.EmployeEmail,
+      nom:      item.fields.EmployeNom,
+      vacances: Number(item.fields.SoldeVacancesHeures) || 0,
+      maladie:  Number(item.fields.SoldeMaladieHeures)  || 0,
+    };
+  }
+
+  async getAllSoldes() {
+    const sid = await this._siteIdCached();
+    const lid = await this._listIdForName(CONFIG.SHAREPOINT_LIST_SOLDES);
+    const d = await this._call(`/sites/${sid}/lists/${lid}/items?$expand=fields&$top=500`);
+    return (d.value || []).map(i => ({
+      id:       i.id,
+      email:    i.fields.EmployeEmail,
+      nom:      i.fields.EmployeNom,
+      vacances: Number(i.fields.SoldeVacancesHeures) || 0,
+      maladie:  Number(i.fields.SoldeMaladieHeures)  || 0,
+    }));
+  }
+
+  async upsertSolde({ email, nom, vacances, maladie }) {
+    const sid = await this._siteIdCached();
+    const lid = await this._listIdForName(CONFIG.SHAREPOINT_LIST_SOLDES);
+    const existing = await this.getSolde(email);
+    const fields = {
+      EmployeEmail:         email,
+      EmployeNom:           nom || '',
+      SoldeVacancesHeures:  Number(vacances) || 0,
+      SoldeMaladieHeures:   Number(maladie)  || 0,
+    };
+    if (existing.id) {
+      return this._call(`/sites/${sid}/lists/${lid}/items/${existing.id}/fields`, {
+        method: 'PATCH',
+        body: JSON.stringify(fields),
+      });
+    }
+    return this._call(`/sites/${sid}/lists/${lid}/items`, {
+      method: 'POST',
+      body: JSON.stringify({ fields }),
+    });
+  }
+
+  // ── DEMANDES DE CONGÉ ─────────────────────────────────────────────────────
+  async createDemande({ email, nom, type, dateDebut, dateFin, heures, motif }) {
+    const sid = await this._siteIdCached();
+    const lid = await this._listIdForName(CONFIG.SHAREPOINT_LIST_DEMANDES);
+    return this._call(`/sites/${sid}/lists/${lid}/items`, {
+      method: 'POST',
+      body: JSON.stringify({
+        fields: {
+          EmployeEmail:  email,
+          EmployeNom:    nom,
+          TypeConge:     type,
+          DateDebut:     new Date(dateDebut).toISOString(),
+          DateFin:       new Date(dateFin).toISOString(),
+          NombreHeures:  Number(heures) || 0,
+          Motif:         motif || '',
+          Statut:        'En attente',
+        },
+      }),
+    });
+  }
+
+  async getMesDemandes(email) {
+    const sid = await this._siteIdCached();
+    const lid = await this._listIdForName(CONFIG.SHAREPOINT_LIST_DEMANDES);
+    const filter = encodeURIComponent(`fields/EmployeEmail eq '${email}'`);
+    const d = await this._call(`/sites/${sid}/lists/${lid}/items?$filter=${filter}&$expand=fields&$orderby=fields/DateDebut desc&$top=200`);
+    return (d.value || []).map(i => ({ id: i.id, ...i.fields }));
+  }
+
+  async getAllDemandes() {
+    const sid = await this._siteIdCached();
+    const lid = await this._listIdForName(CONFIG.SHAREPOINT_LIST_DEMANDES);
+    const d = await this._call(`/sites/${sid}/lists/${lid}/items?$expand=fields&$orderby=fields/DateDebut desc&$top=500`);
+    return (d.value || []).map(i => ({ id: i.id, ...i.fields }));
+  }
+
+  async updateDemandeStatut(id, { statut, approbateur, notes }) {
+    const sid = await this._siteIdCached();
+    const lid = await this._listIdForName(CONFIG.SHAREPOINT_LIST_DEMANDES);
+    return this._call(`/sites/${sid}/lists/${lid}/items/${id}/fields`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        Statut:           statut,
+        DateDecision:     new Date().toISOString(),
+        Approbateur:      approbateur || '',
+        NotesApprobateur: notes || '',
       }),
     });
   }

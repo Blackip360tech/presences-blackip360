@@ -18,6 +18,16 @@ const CONFIG = {
   GRAPH_BASE: 'https://graph.microsoft.com/v1.0',
   SCOPES: ['User.Read', 'Sites.ReadWrite.All'],
 
+  SHAREPOINT_LIST_SOLDES:    'Soldes_Conges',
+  SHAREPOINT_LIST_DEMANDES:  'Demandes_Conges',
+
+  // Types de congé
+  TYPES_CONGE: [
+    { id: 'vacances',   label: 'Vacances',   icon: '🌴', color: '#fdd13a' },
+    { id: 'sans_solde', label: 'Sans solde', icon: '📋', color: '#7d8590' },
+    { id: 'maladie',    label: 'Maladie',    icon: '🤒', color: '#f85149' },
+  ],
+
   // ── Teams ─────────────────────────────────────────────────────────────────
   TEAMS_ID: '667ef628-228c-4459-93fa-73fce99a58f7',
 

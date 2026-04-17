@@ -677,6 +677,70 @@
     #toast.error   { border-color: var(--danger); color: #fca5a5; }
     #toast.success { border-color: var(--success); color: #4ade80; }
 
+    /* ── DEMANDES ───────────────────────────────────────────────────────── */
+    .dem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+    @media (max-width: 900px) { .dem-grid { grid-template-columns: 1fr; } }
+
+    .solde-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: center;
+    }
+    .solde-card .n { font-size: 2rem; font-weight: 700; font-family: var(--mono); }
+    .solde-card .l { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-top: 4px; }
+    .solde-card.vac .n { color: var(--primary); }
+    .solde-card.mal .n { color: var(--danger); }
+
+    .solde-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+
+    .dem-form-card, .dem-list-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .dem-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .dem-field label { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
+    .dem-field input, .dem-field select, .dem-field textarea {
+      padding: 10px 14px;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: .9rem;
+      font-family: inherit;
+    }
+    .dem-field textarea { resize: vertical; min-height: 60px; }
+    .dem-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .dem-item {
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 10px;
+      background: var(--surface-2);
+    }
+    .dem-item-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; flex-wrap: wrap; }
+    .dem-item-type { font-weight: 700; font-size: .9rem; }
+    .dem-item-dates { font-size: .85rem; color: var(--muted); font-family: var(--mono); }
+    .dem-item-motif { font-size: .8rem; color: var(--muted); margin-top: 4px; }
+
+    .dem-statut {
+      padding: 3px 10px;
+      border-radius: 14px;
+      font-size: .72rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .dem-statut.attente  { background: var(--warning-bg); color: var(--primary); }
+    .dem-statut.approuvee{ background: var(--success-bg); color: #4ade80; }
+    .dem-statut.refusee  { background: var(--danger-bg);  color: #f87171; }
+
+    .dem-admin-actions { display: flex; gap: 6px; margin-top: 10px; }
+
     /* ── RESPONSIVE ─────────────────────────────────────────────────────── */
     @media (max-width: 900px) {
       header { flex-wrap: wrap; height: auto; padding: 10px 16px; gap: 12px; }
@@ -724,6 +788,7 @@
 
     <nav class="tabs">
       <button class="tab-btn active" data-tab="statut">👤 Mon statut</button>
+      <button class="tab-btn" data-tab="demandes">🏖️ Mes demandes</button>
       <button class="tab-btn" data-tab="admin" data-admin>👥 Admin</button>
       <button class="tab-btn" data-tab="tv"    data-admin>📺 Affichage TV</button>
       <button class="tab-btn" data-tab="paye"  data-admin>💰 Rapport paye</button>
@@ -750,6 +815,7 @@
   <!-- Content panels -->
   <main>
     <div id="tab-statut" class="tab-content"></div>
+    <div id="tab-demandes" class="tab-content" hidden></div>
     <div id="tab-admin"  class="tab-content" hidden></div>
     <div id="tab-tv"     class="tab-content" hidden></div>
     <div id="tab-paye"   class="tab-content" hidden></div>
@@ -771,10 +837,10 @@
     }
   };
 </script>
-<script src="config.js?v=13"></script>
-<script src="auth.js?v=13"></script>
-<script src="graph.js?v=13"></script>
-<script src="app.js?v=13"></script>
+<script src="config.js?v=14"></script>
+<script src="auth.js?v=14"></script>
+<script src="graph.js?v=14"></script>
+<script src="app.js?v=14"></script>
 
 </body>
 </html>

@@ -139,6 +139,7 @@ const App = {
   async loadTab(tabId) {
     switch (tabId) {
       case 'statut': return this._loadMonStatut();
+      case 'demandes': return this._loadDemandes();
       case 'admin':  return this._loadAdmin();
       case 'tv':     return this._loadTV();
       case 'paye':   return this._loadPaye();
@@ -248,6 +249,202 @@ const App = {
       this.showToast(`❌ ${err.message}`, 'error');
       if (btn) btn.disabled = false;
     }
+  },
+
+  // ── DEMANDES DE CONGÉ ─────────────────────────────────────────────────────
+  async _loadDemandes() {
+    const el = document.getElementById('tab-demandes');
+    el.innerHTML = '<div class="loading">Chargement…</div>';
+    try {
+      const [solde, mesDemandes, toutesDemandes] = await Promise.all([
+        Graph.getSolde(this.user.email),
+        Graph.getMesDemandes(this.user.email),
+        this.isAdmin ? Graph.getAllDemandes() : Promise.resolve(null),
+      ]);
+
+      const attente = toutesDemandes ? toutesDemandes.filter(d => d.Statut === 'En attente') : [];
+
+      el.innerHTML = `
+        <h2>🏖️ Mes demandes de congé</h2>
+
+        <div class="solde-row">
+          <div class="solde-card vac">
+            <div class="n">${solde.vacances} h</div>
+            <div class="l">🌴 Solde vacances</div>
+          </div>
+          <div class="solde-card mal">
+            <div class="n">${solde.maladie} h</div>
+            <div class="l">🤒 Solde maladie</div>
+          </div>
+        </div>
+
+        <div class="dem-grid">
+          <div class="dem-form-card">
+            <h3>➕ Nouvelle demande</h3>
+            <div class="dem-field">
+              <label>Type de congé</label>
+              <select id="demType">
+                ${CONFIG.TYPES_CONGE.map(t => `<option value="${t.label}">${t.icon} ${t.label}</option>`).join('')}
+              </select>
+            </div>
+            <div class="dem-field-row">
+              <div class="dem-field">
+                <label>Date début</label>
+                <input type="date" id="demDateDebut" value="${this._today()}">
+              </div>
+              <div class="dem-field">
+                <label>Date fin</label>
+                <input type="date" id="demDateFin" value="${this._today()}">
+              </div>
+            </div>
+            <div class="dem-field">
+              <label>Nombre d'heures</label>
+              <input type="number" id="demHeures" min="1" step="0.5" value="8">
+            </div>
+            <div class="dem-field">
+              <label>Motif (optionnel)</label>
+              <textarea id="demMotif" maxlength="500" placeholder="Raison de la demande…"></textarea>
+            </div>
+            <button class="btn-primary" id="demSubmit">Soumettre la demande</button>
+          </div>
+
+          <div class="dem-list-card">
+            <h3>📋 Mes demandes récentes</h3>
+            <div id="demMesListe">
+              ${this._renderDemandesListe(mesDemandes, false)}
+            </div>
+          </div>
+        </div>
+
+        ${this.isAdmin ? `
+          <h2 style="margin-top:28px">👥 Gestion des demandes — Admin</h2>
+          <div class="dem-list-card">
+            <h3>⏳ Demandes en attente (${attente.length})</h3>
+            <div id="demAdminListe">
+              ${this._renderDemandesListe(attente, true)}
+            </div>
+          </div>
+
+          <div class="dem-list-card" style="margin-top:16px">
+            <h3>📜 Historique de toutes les demandes</h3>
+            <div id="demAdminHistorique">
+              ${this._renderDemandesListe(toutesDemandes.filter(d => d.Statut !== 'En attente'), false)}
+            </div>
+          </div>
+        ` : ''}
+      `;
+
+      document.getElementById('demSubmit').onclick = () => this._submitDemande();
+      if (this.isAdmin) {
+        el.querySelectorAll('[data-approve]').forEach(btn =>
+          btn.onclick = () => this._decideDemande(btn.dataset.approve, 'Approuvée')
+        );
+        el.querySelectorAll('[data-refuse]').forEach(btn =>
+          btn.onclick = () => this._decideDemande(btn.dataset.refuse, 'Refusée')
+        );
+      }
+    } catch (err) {
+      el.innerHTML = `<div class="error">Erreur : ${err.message}</div>`;
+    }
+  },
+
+  _renderDemandesListe(demandes, showAdminActions) {
+    if (!demandes || !demandes.length) {
+      return '<div class="muted" style="padding:20px;text-align:center">Aucune demande</div>';
+    }
+    return demandes.map(d => {
+      const typeCfg = CONFIG.TYPES_CONGE.find(t => t.label === d.TypeConge);
+      const statutClass = d.Statut === 'En attente' ? 'attente' : d.Statut === 'Approuvée' ? 'approuvee' : 'refusee';
+      return `
+        <div class="dem-item">
+          <div class="dem-item-hdr">
+            <div class="dem-item-type">${typeCfg?.icon || '📅'} ${d.TypeConge} — ${d.NombreHeures || 0} h</div>
+            <span class="dem-statut ${statutClass}">${d.Statut}</span>
+          </div>
+          <div class="dem-item-dates">
+            ${showAdminActions ? `<strong>${d.EmployeNom || d.EmployeEmail}</strong> · ` : ''}
+            ${this._fmtDate(d.DateDebut)} → ${this._fmtDate(d.DateFin)}
+          </div>
+          ${d.Motif ? `<div class="dem-item-motif">💬 ${d.Motif}</div>` : ''}
+          ${d.NotesApprobateur ? `<div class="dem-item-motif" style="color:#4ade80">✓ ${d.NotesApprobateur}</div>` : ''}
+          ${showAdminActions ? `
+            <div class="dem-admin-actions">
+              <button class="btn-primary" data-approve="${d.id}">✓ Approuver</button>
+              <button class="btn-danger" data-refuse="${d.id}">✗ Refuser</button>
+            </div>
+          ` : ''}
+        </div>`;
+    }).join('');
+  },
+
+  async _submitDemande() {
+    const type = document.getElementById('demType').value;
+    const dateDebut = document.getElementById('demDateDebut').value;
+    const dateFin = document.getElementById('demDateFin').value;
+    const heures = parseFloat(document.getElementById('demHeures').value) || 0;
+    const motif = document.getElementById('demMotif').value.trim();
+
+    if (!dateDebut || !dateFin) return this.showToast('Dates requises', 'error');
+    if (new Date(dateFin) < new Date(dateDebut)) return this.showToast('Date fin avant date début', 'error');
+    if (heures <= 0) return this.showToast('Nombre d\'heures invalide', 'error');
+
+    const btn = document.getElementById('demSubmit');
+    btn.disabled = true; btn.textContent = 'Envoi…';
+    try {
+      await Graph.createDemande({
+        email: this.user.email,
+        nom: this.user.name,
+        type,
+        dateDebut,
+        dateFin,
+        heures,
+        motif,
+      });
+      this.showToast('Demande envoyée ✓', 'success');
+      await this._loadDemandes();
+    } catch (err) {
+      this.showToast('Erreur : ' + err.message, 'error');
+      btn.disabled = false; btn.textContent = 'Soumettre la demande';
+    }
+  },
+
+  async _decideDemande(id, statut) {
+    const notes = statut === 'Refusée' ? prompt('Raison du refus (optionnel) :') : prompt('Note pour l\'employé (optionnel) :');
+    if (notes === null) return;
+    try {
+      await Graph.updateDemandeStatut(id, {
+        statut,
+        approbateur: this.user.email,
+        notes: notes || '',
+      });
+
+      // Si approuvée et type Vacances/Maladie : déduire du solde
+      if (statut === 'Approuvée') {
+        const all = await Graph.getAllDemandes();
+        const dem = all.find(d => d.id === id);
+        if (dem && (dem.TypeConge === 'Vacances' || dem.TypeConge === 'Maladie')) {
+          const solde = await Graph.getSolde(dem.EmployeEmail);
+          const newVac = dem.TypeConge === 'Vacances' ? Math.max(0, solde.vacances - (dem.NombreHeures || 0)) : solde.vacances;
+          const newMal = dem.TypeConge === 'Maladie'  ? Math.max(0, solde.maladie  - (dem.NombreHeures || 0)) : solde.maladie;
+          await Graph.upsertSolde({
+            email: dem.EmployeEmail,
+            nom: dem.EmployeNom || solde.nom,
+            vacances: newVac,
+            maladie: newMal,
+          });
+        }
+      }
+
+      this.showToast(`Demande ${statut.toLowerCase()} ✓`, 'success');
+      await this._loadDemandes();
+    } catch (err) {
+      this.showToast('Erreur : ' + err.message, 'error');
+    }
+  },
+
+  _fmtDate(iso) {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleDateString('fr-CA', { day: '2-digit', month: 'short', year: 'numeric' });
   },
 
   // ── ADMIN ─────────────────────────────────────────────────────────────────
@@ -539,6 +736,9 @@ const App = {
       const totByDay = days.map((_, i) => rows.reduce((s, r) => s + r.dayHours[i], 0));
       const grandTotal = totByDay.reduce((a,b) => a+b, 0);
 
+      const soldes = await Graph.getAllSoldes();
+      const soldeMap = Object.fromEntries(soldes.map(s => [s.email?.toLowerCase(), s]));
+
       result.innerHTML = `
         <div class="table-wrap">
           <table class="paye-table">
@@ -547,22 +747,30 @@ const App = {
                 <th>Employé</th><th>Dept</th>
                 ${dayLabels.map(l => `<th class="day">${l}</th>`).join('')}
                 <th class="day">Total</th>
+                <th class="day">🌴 Vac.</th>
+                <th class="day">🤒 Mal.</th>
               </tr>
             </thead>
             <tbody>
-              ${rows.map(r => `
+              ${rows.map(r => {
+                const so = soldeMap[r.emp.email?.toLowerCase()] || { vacances: 0, maladie: 0 };
+                return `
                 <tr>
                   <td><strong>${r.emp.nom || '—'}</strong><br><span class="muted" style="font-size:.75rem">${r.emp.email}</span></td>
                   <td>${r.emp.dept || '—'}</td>
                   ${r.dayHours.map(h => `<td class="day">${h || 0}</td>`).join('')}
                   <td class="day tot-cell">${r.total}</td>
-                </tr>`).join('')}
+                  <td class="day">${so.vacances} h</td>
+                  <td class="day">${so.maladie} h</td>
+                </tr>`;
+              }).join('')}
             </tbody>
             <tfoot>
               <tr>
                 <td>TOTAL</td><td></td>
                 ${totByDay.map(t => `<td class="day">${t}</td>`).join('')}
                 <td class="day">${grandTotal} h</td>
+                <td></td><td></td>
               </tr>
             </tfoot>
           </table>
