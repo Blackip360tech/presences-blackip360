@@ -106,8 +106,10 @@ const App = {
   },
 
   _showApp() {
-    document.getElementById('loginScreen').hidden = true;
-    document.getElementById('app').hidden = false;
+    const ls = document.getElementById('loginScreen');
+    if (ls) { ls.hidden = true; ls.style.display = 'none'; }
+    const app = document.getElementById('app');
+    if (app) { app.hidden = false; app.style.display = ''; }
   },
 
   _renderHeader() {
