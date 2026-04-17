@@ -23,7 +23,7 @@ const CONFIG = {
 
   // Types de congé
   TYPES_CONGE: [
-    { id: 'vacances',   label: 'Vacances',   icon: '🌴', color: '#fdd13a' },
+    { id: 'vacances',   label: 'Vacances',   icon: '🌴', color: '#293af2' },
     { id: 'sans_solde', label: 'Sans solde', icon: '📋', color: '#7d8590' },
     { id: 'maladie',    label: 'Maladie',    icon: '🤒', color: '#f85149' },
   ],
@@ -54,7 +54,7 @@ const CONFIG = {
     { id: 'rdv_perso',   label: 'Parti pour un rendez-vous personnel',       icon: '📅', color: '#20c997', category: 'absent'  },
     { id: 'pause',       label: 'Parti en pause ☕',                         icon: '☕', color: '#795548', category: 'absent'  },
     { id: 'diner',       label: 'Parti en dîner 🍽️',                        icon: '🍽️', color: '#ff9800', category: 'absent'  },
-    { id: 'vacances',    label: 'Parti en vacance 🌞🍺🍹😎',                icon: '🌞', color: '#ffc107', category: 'absent'  },
+    { id: 'vacances',    label: 'Parti en vacance 🌞🍺🍹😎',                icon: '🌞', color: '#fbbf24', category: 'absent'  },
     { id: 'malade',      label: 'Je suis Malade 🤒🤧😷',                    icon: '🤒', color: '#dc3545', category: 'absent'  },
   ],
 };

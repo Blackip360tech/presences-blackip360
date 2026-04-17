@@ -13,9 +13,9 @@
   <style>
     /* ── Variables ──────────────────────────────────────────────────────── */
     :root {
-      --primary:      #fdd13a;
-      --primary-dk:   #e6b82e;
-      --accent:       #fdd13a;
+      --primary:      #293af2;
+      --primary-dk:   #1e2bc0;
+      --accent:       #293af2;
       --bg:           #0a0e1a;
       --surface:      #13192a;
       --surface-2:    #1a2138;
@@ -81,7 +81,7 @@
       display: inline-flex;
       align-items: center; justify-content: center;
       font-size: 2rem; font-weight: 900;
-      color: #000;
+      color: #fff;
       margin-bottom: 20px;
       letter-spacing: -2px;
     }
@@ -91,7 +91,7 @@
     #loginBtn {
       display: inline-flex; align-items: center; gap: 12px;
       background: var(--primary);
-      color: #000;
+      color: #fff;
       border: none;
       padding: 14px 28px;
       border-radius: 10px;
@@ -101,7 +101,7 @@
       width: 100%;
       justify-content: center;
     }
-    #loginBtn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(253,209,58,.4); }
+    #loginBtn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(41,58,242,.4); }
     .login-hint { margin-top: 20px; color: var(--muted); font-size: .8rem; }
 
     /* ── HEADER ─────────────────────────────────────────────────────────── */
@@ -127,7 +127,7 @@
       border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
       font-size: 1.2rem; font-weight: 900;
-      color: #000; letter-spacing: -1px;
+      color: #fff; letter-spacing: -1px;
     }
     .hdr-title { line-height: 1.15; }
     .hdr-title .t1 { font-weight: 700; font-size: .95rem; }
@@ -156,22 +156,23 @@
     }
     .tab-btn:hover { color: var(--text); background: var(--surface-2); }
     .tab-btn.active {
-      color: #000;
+      color: #fff;
       background: var(--primary);
       font-weight: 600;
     }
 
     .hdr-clock {
       font-family: var(--mono);
-      font-size: .95rem;
-      color: var(--primary);
+      font-size: .8rem;
       text-align: right;
-      line-height: 1.2;
+      line-height: 1.5;
       flex-shrink: 0;
       letter-spacing: 0;
     }
-    .hdr-clock .date { font-size: .7rem; color: var(--muted); font-family: inherit; margin-top: 2px; }
-    .hdr-clock .jp   { font-size: .7rem; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+    .hdr-clock > div { font-size: .8rem; }
+    .hdr-clock .est  { color: var(--primary); font-weight: 600; }
+    .hdr-clock .date { color: var(--muted); }
+    .hdr-clock .jp   { color: var(--muted); }
 
     .user-chip {
       display: flex; align-items: center; gap: 10px;
@@ -187,7 +188,7 @@
       width: 34px; height: 34px;
       border-radius: 8px;
       background: var(--primary);
-      color: #000;
+      color: #fff;
       display: flex; align-items: center; justify-content: center;
       font-weight: 700; font-size: .8rem;
       flex-shrink: 0;
@@ -282,7 +283,7 @@
     .btn-primary {
       padding: 8px 16px;
       background: var(--primary);
-      color: #000;
+      color: #fff;
       border: none;
       border-radius: 8px;
       font-size: .85rem;
@@ -290,7 +291,7 @@
       cursor: pointer;
       transition: transform .1s, box-shadow .15s;
     }
-    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(253,209,58,.3); }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(41,58,242,.3); }
 
     .btn-secondary {
       padding: 8px 16px;
@@ -365,7 +366,7 @@
     .notes-row textarea:focus {
       outline: none;
       border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(253,209,58,.15);
+      box-shadow: 0 0 0 3px rgba(41,58,242,.15);
     }
 
     .statuts-grid {
@@ -509,7 +510,7 @@
       border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
       font-size: 1.3rem; font-weight: 900;
-      color: #000;
+      color: #fff;
     }
     .tv-logo-txt .t1 { font-size: 1.3rem; font-weight: 800; }
     .tv-logo-txt .t2 { font-size: .78rem; color: var(--muted); }
@@ -766,7 +767,7 @@
     <div class="login-sub">Système de gestion des présences</div>
 
     <button id="loginBtn">
-      <svg width="18" height="18" viewBox="0 0 21 21" fill="none"><rect x="1" y="1" width="9" height="9" fill="#000"/><rect x="11" y="1" width="9" height="9" fill="#000" opacity=".7"/><rect x="1" y="11" width="9" height="9" fill="#000" opacity=".7"/><rect x="11" y="11" width="9" height="9" fill="#000" opacity=".5"/></svg>
+      <svg width="18" height="18" viewBox="0 0 21 21" fill="none"><rect x="1" y="1" width="9" height="9" fill="#fff"/><rect x="11" y="1" width="9" height="9" fill="#fff" opacity=".7"/><rect x="1" y="11" width="9" height="9" fill="#fff" opacity=".7"/><rect x="11" y="11" width="9" height="9" fill="#fff" opacity=".5"/></svg>
       Connexion avec Microsoft 365
     </button>
     <p class="login-hint">Utilisez votre compte @blackip360.com</p>
@@ -837,10 +838,10 @@
     }
   };
 </script>
-<script src="config.js?v=15"></script>
-<script src="auth.js?v=15"></script>
-<script src="graph.js?v=15"></script>
-<script src="app.js?v=15"></script>
+<script src="config.js?v=16"></script>
+<script src="auth.js?v=16"></script>
+<script src="graph.js?v=16"></script>
+<script src="app.js?v=16"></script>
 
 </body>
 </html>

@@ -118,13 +118,14 @@ class GraphAPI {
     const filter = encodeURIComponent(`fields/EmployeEmail eq '${email}'`);
     const d = await this._call(`/sites/${sid}/lists/${lid}/items?$filter=${filter}&$expand=fields&$top=1`);
     const item = d.value?.[0];
-    if (!item) return { vacances: 0, maladie: 0, email };
+    if (!item) return { vacances: 0, maladie: 0, departement: '', email };
     return {
-      id:       item.id,
-      email:    item.fields.EmployeEmail,
-      nom:      item.fields.EmployeNom,
-      vacances: Number(item.fields.SoldeVacancesHeures) || 0,
-      maladie:  Number(item.fields.SoldeMaladieHeures)  || 0,
+      id:          item.id,
+      email:       item.fields.EmployeEmail,
+      nom:         item.fields.EmployeNom,
+      departement: item.fields.Departement || '',
+      vacances:    Number(item.fields.SoldeVacancesHeures) || 0,
+      maladie:     Number(item.fields.SoldeMaladieHeures)  || 0,
     };
   }
 
@@ -133,21 +134,23 @@ class GraphAPI {
     const lid = await this._listIdForName(CONFIG.SHAREPOINT_LIST_SOLDES);
     const d = await this._call(`/sites/${sid}/lists/${lid}/items?$expand=fields&$top=500`);
     return (d.value || []).map(i => ({
-      id:       i.id,
-      email:    i.fields.EmployeEmail,
-      nom:      i.fields.EmployeNom,
-      vacances: Number(i.fields.SoldeVacancesHeures) || 0,
-      maladie:  Number(i.fields.SoldeMaladieHeures)  || 0,
+      id:          i.id,
+      email:       i.fields.EmployeEmail,
+      nom:         i.fields.EmployeNom,
+      departement: i.fields.Departement || '',
+      vacances:    Number(i.fields.SoldeVacancesHeures) || 0,
+      maladie:     Number(i.fields.SoldeMaladieHeures)  || 0,
     }));
   }
 
-  async upsertSolde({ email, nom, vacances, maladie }) {
+  async upsertSolde({ email, nom, departement, vacances, maladie }) {
     const sid = await this._siteIdCached();
     const lid = await this._listIdForName(CONFIG.SHAREPOINT_LIST_SOLDES);
     const existing = await this.getSolde(email);
     const fields = {
       EmployeEmail:         email,
       EmployeNom:           nom || '',
+      Departement:          departement || '',
       SoldeVacancesHeures:  Number(vacances) || 0,
       SoldeMaladieHeures:   Number(maladie)  || 0,
     };

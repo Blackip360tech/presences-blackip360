@@ -436,6 +436,7 @@ const App = {
           await Graph.upsertSolde({
             email: dem.EmployeEmail,
             nom: dem.EmployeNom || solde.nom,
+            departement: solde.departement || dem.Departement || '',
             vacances: newVac,
             maladie: newMal,
           });
@@ -463,52 +464,66 @@ const App = {
         Graph.getAllPresences(),
       ]);
 
-      // Construire la liste unique d'employés depuis les présences
       const empMap = {};
       for (const p of allPresences) {
         const k = p.EmployeEmail?.toLowerCase();
         if (k && !empMap[k]) {
-          empMap[k] = { email: p.EmployeEmail, nom: p.EmployeNom || p.EmployeEmail };
+          empMap[k] = { email: p.EmployeEmail, nom: p.EmployeNom || p.EmployeEmail, departement: p.Departement || '' };
         }
       }
-      // Ajouter aussi ceux qui ont un solde mais pas de présence
       for (const s of allSoldes) {
         const k = s.email?.toLowerCase();
         if (k && !empMap[k]) {
-          empMap[k] = { email: s.email, nom: s.nom || s.email };
+          empMap[k] = { email: s.email, nom: s.nom || s.email, departement: s.departement || '' };
         }
       }
 
       const soldeMap = Object.fromEntries(allSoldes.map(s => [s.email?.toLowerCase(), s]));
-      const rows = Object.values(empMap).map(e => ({
-        email:    e.email,
-        nom:      e.nom,
-        vacances: soldeMap[e.email.toLowerCase()]?.vacances || 0,
-        maladie:  soldeMap[e.email.toLowerCase()]?.maladie  || 0,
-      })).sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
+      const rows = Object.values(empMap).map(e => {
+        const s = soldeMap[e.email.toLowerCase()] || {};
+        return {
+          email:       e.email,
+          nom:         e.nom,
+          departement: s.departement || e.departement || '',
+          vacances:    s.vacances || 0,
+          maladie:     s.maladie  || 0,
+        };
+      }).sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
 
-      const inpStyle = 'width:100px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:.88rem';
+      const inpStyle = 'padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.85rem;width:100%';
+      const numStyle = inpStyle + ';width:90px;font-family:var(--mono)';
+      const depts = CONFIG.DEPARTEMENTS.filter(d => d !== 'Tous');
 
       wrap.innerHTML = `
+        <div class="filter-row">
+          <input type="text" id="soldeSearch" placeholder="🔍 Rechercher un employé…">
+        </div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>Employé</th>
+                <th>Département</th>
                 <th>🌴 Vacances (h)</th>
                 <th>🤒 Maladie (h)</th>
                 <th>Action</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="soldeTbody">
               ${rows.map(emp => `
-                <tr data-email="${emp.email}" data-nom="${(emp.nom || '').replace(/"/g, '&quot;')}">
+                <tr data-email="${emp.email}" data-nom="${(emp.nom || '').replace(/"/g, '&quot;')}" data-search="${(emp.nom + ' ' + emp.email).toLowerCase()}">
                   <td>
                     <strong>${emp.nom}</strong><br>
                     <span class="muted" style="font-size:.75rem">${emp.email}</span>
                   </td>
-                  <td><input type="number" class="solde-vac" value="${emp.vacances}" step="0.5" min="0" style="${inpStyle}"></td>
-                  <td><input type="number" class="solde-mal" value="${emp.maladie}"  step="0.5" min="0" style="${inpStyle}"></td>
+                  <td>
+                    <select class="solde-dept" style="${inpStyle}">
+                      <option value="">— Non défini —</option>
+                      ${depts.map(d => `<option value="${d}"${d === emp.departement ? ' selected' : ''}>${d}</option>`).join('')}
+                    </select>
+                  </td>
+                  <td><input type="number" class="solde-vac" value="${emp.vacances}" step="0.5" min="0" style="${numStyle}"></td>
+                  <td><input type="number" class="solde-mal" value="${emp.maladie}"  step="0.5" min="0" style="${numStyle}"></td>
                   <td><button class="btn-primary solde-save">💾 Enregistrer</button></td>
                 </tr>
               `).join('')}
@@ -517,20 +532,31 @@ const App = {
         </div>
       `;
 
+      const searchEl = document.getElementById('soldeSearch');
+      if (searchEl) {
+        searchEl.oninput = () => {
+          const q = searchEl.value.toLowerCase().trim();
+          document.querySelectorAll('#soldeTbody tr').forEach(tr => {
+            tr.style.display = !q || tr.dataset.search.includes(q) ? '' : 'none';
+          });
+        };
+      }
+
       wrap.querySelectorAll('.solde-save').forEach(btn => {
         btn.onclick = async () => {
           const tr = btn.closest('tr');
-          const email    = tr.dataset.email;
-          const nom      = tr.dataset.nom;
-          const vacances = parseFloat(tr.querySelector('.solde-vac').value) || 0;
-          const maladie  = parseFloat(tr.querySelector('.solde-mal').value) || 0;
+          const email       = tr.dataset.email;
+          const nom         = tr.dataset.nom;
+          const departement = tr.querySelector('.solde-dept').value;
+          const vacances    = parseFloat(tr.querySelector('.solde-vac').value) || 0;
+          const maladie     = parseFloat(tr.querySelector('.solde-mal').value) || 0;
           btn.disabled = true;
           const orig = btn.textContent;
           btn.textContent = '⏳';
           try {
-            await Graph.upsertSolde({ email, nom, vacances, maladie });
+            await Graph.upsertSolde({ email, nom, departement, vacances, maladie });
             btn.textContent = '✓ Sauvé';
-            this.showToast('Solde mis à jour', 'success');
+            this.showToast('Utilisateur mis à jour', 'success');
             setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 1500);
           } catch (err) {
             btn.textContent = '❌';
@@ -908,7 +934,7 @@ const App = {
   },
 
   // ── ACCÈS ─────────────────────────────────────────────────────────────────
-  _loadAcces() {
+  async _loadAcces() {
     const configOk = id => id && id !== 'VOTRE_CLIENT_ID' && id !== 'VOTRE_TENANT_ID';
     const sp = `https://${CONFIG.SHAREPOINT_HOST}${CONFIG.SHAREPOINT_SITE_PATH}`;
 
@@ -916,6 +942,17 @@ const App = {
       <div class="acces-wrap" style="max-width:860px">
 
         <h2>Configuration &amp; Guide d'administration</h2>
+
+        ${this.isAdmin ? `
+          <div class="acces-card">
+            <h3>👥 Gestion des utilisateurs</h3>
+            <p class="muted" style="margin-bottom:14px;font-size:.85rem">
+              Assigner un département et gérer les soldes de congés pour chaque employé.
+              Les employés apparaissent automatiquement dès leur premier pointage.
+            </p>
+            <div id="accesSoldesWrap"><div class="loading">Chargement…</div></div>
+          </div>
+        ` : ''}
 
         <!-- État actuel -->
         <div class="acces-card">
@@ -1033,6 +1070,17 @@ const App = {
         </div>
 
       </div>`;
+
+    if (this.isAdmin) {
+      // Réutiliser _renderSoldesAdmin mais cibler le nouveau wrap
+      const newWrap = document.getElementById('accesSoldesWrap');
+      if (newWrap) {
+        // Créer un div temporaire avec l'id attendu par _renderSoldesAdmin
+        newWrap.id = 'soldesAdminWrap';
+        await this._renderSoldesAdmin();
+        newWrap.id = 'accesSoldesWrap';
+      }
+    }
   },
 
   // ── Utilitaires ───────────────────────────────────────────────────────────
