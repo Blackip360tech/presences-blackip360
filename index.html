@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <script>if(localStorage.getItem('bip-dark')==='1')document.documentElement.setAttribute('data-dark','');</script>
   <title>BlackIP360 — Présences</title>
 
   <!-- MSAL.js 2.x (authentification Microsoft) -->
@@ -24,6 +25,45 @@
       --shadow:       0 2px 8px rgba(0,0,0,.10);
       --radius:       8px;
     }
+
+    [data-dark] {
+      --primary:   #4da6ff;
+      --primary-dk:#3080d0;
+      --bg:        #111827;
+      --surface:   #1f2937;
+      --text:      #f3f4f6;
+      --muted:     #9ca3af;
+      --border:    #374151;
+      --shadow:    0 2px 8px rgba(0,0,0,.5);
+      --success:   #34d399;
+      --danger:    #f87171;
+    }
+    [data-dark] body { background: var(--bg); color: var(--text); }
+    [data-dark] code { background: #374151; color: #e5e7eb; }
+    [data-dark] .login-card { background: #1f2937; color: #f3f4f6; }
+    [data-dark] .login-sub  { color: #9ca3af; }
+    [data-dark] .login-hint { color: #6b7280; }
+    [data-dark] .error { background: #3b1f1f; border-color: #7f1d1d; color: #fca5a5; }
+    [data-dark] .statut-btn { background: #1f2937; border-color: #374151; color: #f3f4f6; }
+    [data-dark] .statut-btn:hover { background: #374151; }
+    [data-dark] .statut-btn.selected { background: #1e3a5f; border-color: var(--c, var(--primary)); }
+    [data-dark] nav.tabs { background: #1f2937; border-bottom-color: #374151; }
+    [data-dark] .tab-btn { color: #9ca3af; }
+    [data-dark] thead th { background: #111827; color: #9ca3af; border-bottom-color: #374151; }
+    [data-dark] tbody td { border-bottom-color: #374151; }
+    [data-dark] tbody tr:hover { background: #374151; }
+    [data-dark] input[type="text"],
+    [data-dark] input[type="date"],
+    [data-dark] textarea,
+    [data-dark] select { background: #111827; color: #f3f4f6; border-color: #374151; }
+    [data-dark] .filter-row input[type="text"]:focus { border-color: var(--primary); }
+    [data-dark] .notes-row textarea:focus { border-color: var(--primary); }
+    [data-dark] .acces-card { background: #1f2937; }
+    [data-dark] .acces-card td:first-child { color: #9ca3af; }
+    [data-dark] .btn-secondary { background: #1f2937; color: #f3f4f6; border-color: #374151; }
+    [data-dark] .btn-secondary:hover { background: #374151; }
+    [data-dark] #toast { background: #1f2937; }
+    [data-dark] h3 { color: #9ca3af; }
 
     /* ── Reset ──────────────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -551,6 +591,7 @@
   <header>
     <div class="hdr-logo">BlackIP360 · Présences</div>
     <div class="hdr-spacer"></div>
+    <button id="darkBtn" title="Mode sombre" style="background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer;padding:4px 8px;border-radius:6px;opacity:.8;transition:opacity .2s" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.8">🌙</button>
     <div class="user-chip">
       <div class="user-avatar" id="userInitials">?</div>
       <div class="user-details">
@@ -595,10 +636,10 @@
     }
   };
 </script>
-<script src="config.js?v=10"></script>
-<script src="auth.js?v=10"></script>
-<script src="graph.js?v=10"></script>
-<script src="app.js?v=10"></script>
+<script src="config.js?v=11"></script>
+<script src="auth.js?v=11"></script>
+<script src="graph.js?v=11"></script>
+<script src="app.js?v=11"></script>
 
 </body>
 </html>

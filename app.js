@@ -66,7 +66,6 @@ const App = {
     this.user = Auth.getUser();
     console.log('[APP] _onLoginSuccess user:', this.user);
 
-    let profileErr = null;
     try {
       const profile        = await Graph.getProfile();
       this.user.department = profile.department  || 'Non défini';
@@ -75,7 +74,6 @@ const App = {
       this.user.name       = profile.displayName || this.user.name;
       console.log('[APP] profil Graph OK:', this.user.name);
     } catch (err) {
-      profileErr = err.message;
       this.user.department = 'Non défini';
       console.warn('[APP] Graph.getProfile() échec:', err.message);
     }
@@ -83,12 +81,6 @@ const App = {
     this._checkAdmin();
     this._showApp();
     this._renderHeader();
-
-    // Barre de debug temporaire en haut de l'app
-    const dbgBar = document.createElement('div');
-    dbgBar.style.cssText = 'background:#fff3cd;border-bottom:2px solid #ffc107;padding:8px 16px;font-size:.8rem;font-family:monospace;word-break:break-all';
-    dbgBar.innerHTML = `<strong>DEBUG APP</strong> — Connecté: <b>${this.user.email}</b> | Dept: ${this.user.department} | Admin: ${this.isAdmin}${profileErr ? ' | ❌ Graph.getProfile: ' + profileErr : ' | ✅ Graph OK'}`;
-    document.body.prepend(dbgBar);
 
     await this.loadTab('statut');
   },
@@ -110,6 +102,8 @@ const App = {
     if (ls) { ls.hidden = true; ls.style.display = 'none'; }
     const app = document.getElementById('app');
     if (app) { app.hidden = false; app.style.display = ''; }
+    const btn = document.getElementById('darkBtn');
+    if (btn) btn.textContent = document.documentElement.hasAttribute('data-dark') ? '☀️' : '🌙';
   },
 
   _renderHeader() {
@@ -470,49 +464,129 @@ const App = {
 
   // ── ACCÈS ─────────────────────────────────────────────────────────────────
   _loadAcces() {
-    const configOk = id => id !== 'VOTRE_CLIENT_ID' && id !== 'VOTRE_TENANT_ID';
+    const configOk = id => id && id !== 'VOTRE_CLIENT_ID' && id !== 'VOTRE_TENANT_ID';
+    const sp = `https://${CONFIG.SHAREPOINT_HOST}${CONFIG.SHAREPOINT_SITE_PATH}`;
 
     document.getElementById('tab-acces').innerHTML = `
-      <div class="acces-wrap">
-        <h2>Gestion des accès et configuration</h2>
+      <div class="acces-wrap" style="max-width:860px">
 
-        <div class="acces-card">
-          <h3>Étapes de déploiement</h3>
-          <ol class="checklist">
-            <li class="done">Flux Power Automate actif</li>
-            <li class="done">Liste SharePoint Presences_Employes créée</li>
-            <li class="${configOk(CONFIG.CLIENT_ID) ? 'done' : 'todo'}">
-              App Azure AD enregistrée
-              ${configOk(CONFIG.CLIENT_ID) ? '' : '→ <a href="https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/RegisteredApps" target="_blank">Créer l\'app</a>'}
-            </li>
-            <li class="${CONFIG.APP_URL.includes('YOUR_GITHUB') ? 'todo' : 'done'}">
-              GitHub Pages déployé
-              ${CONFIG.APP_URL.includes('YOUR_GITHUB') ? '→ mettre à jour APP_URL dans config.js' : ''}
-            </li>
-            <li class="todo">Manifest Teams mis à jour avec l\'URL GitHub Pages</li>
-            <li class="todo">App Teams déployée pour tous les employés</li>
-          </ol>
-        </div>
+        <h2>Configuration &amp; Guide d'administration</h2>
 
+        <!-- État actuel -->
         <div class="acces-card">
-          <h3>Configuration actuelle</h3>
+          <h3>État de la configuration</h3>
           <table>
-            <tr><td>Client ID</td>   <td><code>${CONFIG.CLIENT_ID}</code></td></tr>
-            <tr><td>Tenant ID</td>   <td><code>${CONFIG.TENANT_ID}</code></td></tr>
-            <tr><td>SharePoint</td>  <td><code>${CONFIG.SHAREPOINT_HOST}${CONFIG.SHAREPOINT_SITE_PATH}</code></td></tr>
-            <tr><td>Liste</td>       <td><code>${CONFIG.SHAREPOINT_LIST}</code></td></tr>
-            <tr><td>App URL</td>     <td><code>${CONFIG.APP_URL}</code></td></tr>
+            <tr><td>Client ID Azure AD</td><td><code>${CONFIG.CLIENT_ID}</code></td></tr>
+            <tr><td>Tenant ID</td>         <td><code>${CONFIG.TENANT_ID}</code></td></tr>
+            <tr><td>Site SharePoint</td>   <td><code>${CONFIG.SHAREPOINT_HOST}${CONFIG.SHAREPOINT_SITE_PATH}</code></td></tr>
+            <tr><td>Liste</td>             <td><code>${CONFIG.SHAREPOINT_LIST}</code></td></tr>
+            <tr><td>URL de l'app</td>      <td><code>${CONFIG.APP_URL}</code></td></tr>
+            <tr><td>Utilisateur connecté</td><td><code>${this.user?.email || '—'}</code></td></tr>
+            <tr><td>Accès admin</td>       <td>${this.isAdmin ? '✅ Oui' : '❌ Non'}</td></tr>
           </table>
         </div>
 
+        <!-- Checklist déploiement -->
         <div class="acces-card">
-          <h3>Raccourcis portail</h3>
-          <div class="link-row">
-            <a class="ext-link" href="https://portal.azure.com" target="_blank">🔗 Portail Azure</a>
-            <a class="ext-link" href="https://blackip360.sharepoint.com/sites/PlanificationTI" target="_blank">🔗 Site SharePoint</a>
-            <a class="ext-link" href="https://make.powerautomate.com" target="_blank">🔗 Power Automate</a>
+          <h3>Checklist de déploiement</h3>
+          <ol class="checklist">
+            <li class="${configOk(CONFIG.CLIENT_ID) ? 'done' : 'todo'}">App Azure AD enregistrée (CLIENT_ID dans config.js)</li>
+            <li class="done">Permissions Graph API accordées (User.Read + Sites.ReadWrite.All)</li>
+            <li class="done">Liste SharePoint <code>${CONFIG.SHAREPOINT_LIST}</code> créée avec les bonnes colonnes</li>
+            <li class="${CONFIG.APP_URL.includes('YOUR_GITHUB') ? 'todo' : 'done'}">GitHub Pages déployé — <code>${CONFIG.APP_URL}</code></li>
+            <li class="todo">Manifest Teams mis à jour et déployé (onglet dans Teams)</li>
+          </ol>
+        </div>
+
+        <!-- Ajouter un utilisateur -->
+        <div class="acces-card">
+          <h3>➕ Ajouter un utilisateur</h3>
+          <p style="font-size:.9rem;line-height:1.7;margin-bottom:12px">
+            <strong>Aucune configuration requise.</strong> Tout employé avec un compte <code>@blackip360.com</code> dans Azure AD peut se connecter automatiquement.
+          </p>
+          <p style="font-size:.9rem;line-height:1.7">
+            Leur premier pointage crée automatiquement leur entrée dans la liste SharePoint.
+          </p>
+        </div>
+
+        <!-- Accès admin -->
+        <div class="acces-card">
+          <h3>🔑 Donner l'accès administrateur</h3>
+          <p style="font-size:.9rem;line-height:1.7;margin-bottom:12px">
+            Deux façons de rendre un utilisateur admin :
+          </p>
+          <ol style="font-size:.9rem;line-height:2;padding-left:20px">
+            <li>
+              <strong>Par email (immédiat)</strong> — Ajouter l'adresse dans <code>app.js</code>, fonction <code>_checkAdmin()</code> :
+              <br><code>const adminEmails = ['admin@blackip360.com', 'tech@blackip360.com', 'tfournier@blackip360.com', 'nouveau@blackip360.com'];</code>
+            </li>
+            <li>
+              <strong>Par département Azure AD</strong> — Définir le département de l'utilisateur à <code>Direction</code> dans Azure AD (portail Azure → Utilisateurs → Profil).
+              La détection est automatique à la prochaine connexion.
+            </li>
+          </ol>
+        </div>
+
+        <!-- Statuts -->
+        <div class="acces-card">
+          <h3>🎨 Modifier les statuts</h3>
+          <p style="font-size:.9rem;line-height:1.7;margin-bottom:12px">
+            Les statuts sont définis dans <code>config.js</code>, tableau <code>STATUTS</code>. Chaque statut a :
+          </p>
+          <table>
+            <thead><tr><th>Propriété</th><th>Description</th><th>Exemple</th></tr></thead>
+            <tbody>
+              <tr><td><code>id</code></td>      <td>Identifiant unique</td>      <td><code>bureau</code></td></tr>
+              <tr><td><code>label</code></td>   <td>Texte affiché</td>           <td><code>Je suis là au bureau</code></td></tr>
+              <tr><td><code>icon</code></td>    <td>Emoji</td>                   <td><code>🏢</code></td></tr>
+              <tr><td><code>color</code></td>   <td>Couleur hex du bouton</td>   <td><code>#198754</code></td></tr>
+              <tr><td><code>category</code></td><td><code>present</code> ou <code>absent</code></td><td><code>present</code></td></tr>
+            </tbody>
+          </table>
+          <p style="font-size:.85rem;color:var(--muted);margin-top:10px">⚠️ Le <code>label</code> est la valeur enregistrée dans SharePoint. Ne pas le modifier sans mettre à jour les données existantes.</p>
+        </div>
+
+        <!-- Colonnes SharePoint -->
+        <div class="acces-card">
+          <h3>📋 Colonnes SharePoint requises</h3>
+          <table>
+            <thead><tr><th>Nom interne</th><th>Type</th><th>Obligatoire</th></tr></thead>
+            <tbody>
+              <tr><td><code>EmployeNom</code></td>    <td>Ligne de texte</td>  <td>✅</td></tr>
+              <tr><td><code>EmployeEmail</code></td>  <td>Ligne de texte</td>  <td>✅ (indexer pour perf.)</td></tr>
+              <tr><td><code>Departement</code></td>   <td>Ligne de texte</td>  <td>✅</td></tr>
+              <tr><td><code>StatutActuel</code></td>  <td>Ligne de texte</td>  <td>✅</td></tr>
+              <tr><td><code>HeurePointage</code></td> <td>Date et heure</td>   <td>✅</td></tr>
+              <tr><td><code>Notes</code></td>         <td>Ligne de texte</td>  <td>Non</td></tr>
+            </tbody>
+          </table>
+          <div class="link-row" style="margin-top:14px">
+            <a class="ext-link" href="${sp}/Lists/${CONFIG.SHAREPOINT_LIST}" target="_blank">📋 Ouvrir la liste</a>
+            <a class="ext-link" href="${sp}/_layouts/15/listedit.aspx?List=${CONFIG.SHAREPOINT_LIST}" target="_blank">⚙️ Paramètres de la liste</a>
           </div>
         </div>
+
+        <!-- Départements -->
+        <div class="acces-card">
+          <h3>🏢 Modifier les départements</h3>
+          <p style="font-size:.9rem;line-height:1.7">
+            La liste des départements est dans <code>config.js</code>, tableau <code>DEPARTEMENTS</code> :<br>
+            <code>DEPARTEMENTS: ['Tous', 'Direction', 'Développement', 'Infrastructure', 'Support', 'Administration']</code><br>
+            Ajouter ou retirer des entrées selon votre organisation. Le premier élément doit rester <code>'Tous'</code>.
+          </p>
+        </div>
+
+        <!-- Liens -->
+        <div class="acces-card">
+          <h3>🔗 Raccourcis portail</h3>
+          <div class="link-row">
+            <a class="ext-link" href="https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/RegisteredApps" target="_blank">🔐 Azure AD — App</a>
+            <a class="ext-link" href="${sp}" target="_blank">📁 Site SharePoint</a>
+            <a class="ext-link" href="https://admin.microsoft.com" target="_blank">⚙️ M365 Admin</a>
+            <a class="ext-link" href="https://github.com/Blackip360tech/presences-blackip360-dev/actions" target="_blank">🚀 GitHub Actions (DEV)</a>
+          </div>
+        </div>
+
       </div>`;
   },
 
@@ -548,6 +622,13 @@ const App = {
     setTimeout(() => t.classList.remove('show'), 3500);
   },
 
+  _toggleDark() {
+    const on = document.documentElement.toggleAttribute('data-dark');
+    localStorage.setItem('bip-dark', on ? '1' : '0');
+    const btn = document.getElementById('darkBtn');
+    if (btn) btn.textContent = on ? '☀️' : '🌙';
+  },
+
   _fatalError(msg) {
     document.body.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;background:#0078d4;color:white">
@@ -562,6 +643,7 @@ const App = {
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   App.init();
+  document.getElementById('darkBtn')?.addEventListener('click', () => App._toggleDark());
 
   document.getElementById('loginBtn')?.addEventListener('click', async () => {
     try {
