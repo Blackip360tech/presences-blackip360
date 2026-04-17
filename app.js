@@ -20,8 +20,17 @@ const App = {
         );
       }
 
+      // Stocker les comptes pour le debug
+      this._msalAccounts = Auth.msal?.getAllAccounts()?.map(a => a.username) || [];
+
       if (Auth.isLoggedIn()) {
         await this._onLoginSuccess();
+      } else {
+        // Afficher debug si on vient d'un redirect (code ou error dans l'URL)
+        const p = new URLSearchParams(window.location.search);
+        if (p.has('code') || p.has('error') || p.has('error_description')) {
+          this._showDebug();
+        }
       }
     } catch (err) {
       this._fatalError('Erreur d\'initialisation: ' + err.message);
@@ -31,6 +40,22 @@ const App = {
   _showLoginError(html) {
     const el = document.getElementById('loginError');
     if (el) { el.innerHTML = html; el.hidden = false; }
+  },
+
+  _showDebug() {
+    const params = Object.fromEntries(new URLSearchParams(window.location.search));
+    const hash   = window.location.hash;
+    const lsKeys = Object.keys(localStorage).filter(k => k.includes('msal') || k.includes('login'));
+    const el     = document.getElementById('loginError');
+    if (!el) return;
+    el.hidden = false;
+    el.innerHTML = `
+      <strong>Debug MSAL</strong><br>
+      URL params: <code>${JSON.stringify(params)}</code><br>
+      Hash: <code>${hash || '(vide)'}</code><br>
+      LocalStorage MSAL (${lsKeys.length} clés): <code>${lsKeys.join(', ') || '(vide)'}</code><br>
+      Comptes MSAL: <code>${JSON.stringify(this._msalAccounts || [])}</code>
+    `;
   },
 
   async _onLoginSuccess() {
