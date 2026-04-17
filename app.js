@@ -331,6 +331,12 @@ const App = {
               ${this._renderDemandesListe(toutesDemandes.filter(d => d.Statut !== 'En attente'), false)}
             </div>
           </div>
+
+          <h2 style="margin-top:28px">💰 Gestion des soldes</h2>
+          <div class="dem-list-card">
+            <h3>Modifier les soldes de vacances et de maladie</h3>
+            <div id="soldesAdminWrap"><div class="loading">Chargement…</div></div>
+          </div>
         ` : ''}
       `;
 
@@ -342,6 +348,7 @@ const App = {
         el.querySelectorAll('[data-refuse]').forEach(btn =>
           btn.onclick = () => this._decideDemande(btn.dataset.refuse, 'Refusée')
         );
+        this._renderSoldesAdmin();
       }
     } catch (err) {
       el.innerHTML = `<div class="error">Erreur : ${err.message}</div>`;
@@ -445,6 +452,96 @@ const App = {
   _fmtDate(iso) {
     if (!iso) return '—';
     return new Date(iso).toLocaleDateString('fr-CA', { day: '2-digit', month: 'short', year: 'numeric' });
+  },
+
+  async _renderSoldesAdmin() {
+    const wrap = document.getElementById('soldesAdminWrap');
+    if (!wrap) return;
+    try {
+      const [allSoldes, allPresences] = await Promise.all([
+        Graph.getAllSoldes(),
+        Graph.getAllPresences(),
+      ]);
+
+      // Construire la liste unique d'employés depuis les présences
+      const empMap = {};
+      for (const p of allPresences) {
+        const k = p.EmployeEmail?.toLowerCase();
+        if (k && !empMap[k]) {
+          empMap[k] = { email: p.EmployeEmail, nom: p.EmployeNom || p.EmployeEmail };
+        }
+      }
+      // Ajouter aussi ceux qui ont un solde mais pas de présence
+      for (const s of allSoldes) {
+        const k = s.email?.toLowerCase();
+        if (k && !empMap[k]) {
+          empMap[k] = { email: s.email, nom: s.nom || s.email };
+        }
+      }
+
+      const soldeMap = Object.fromEntries(allSoldes.map(s => [s.email?.toLowerCase(), s]));
+      const rows = Object.values(empMap).map(e => ({
+        email:    e.email,
+        nom:      e.nom,
+        vacances: soldeMap[e.email.toLowerCase()]?.vacances || 0,
+        maladie:  soldeMap[e.email.toLowerCase()]?.maladie  || 0,
+      })).sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
+
+      const inpStyle = 'width:100px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:.88rem';
+
+      wrap.innerHTML = `
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Employé</th>
+                <th>🌴 Vacances (h)</th>
+                <th>🤒 Maladie (h)</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map(emp => `
+                <tr data-email="${emp.email}" data-nom="${(emp.nom || '').replace(/"/g, '&quot;')}">
+                  <td>
+                    <strong>${emp.nom}</strong><br>
+                    <span class="muted" style="font-size:.75rem">${emp.email}</span>
+                  </td>
+                  <td><input type="number" class="solde-vac" value="${emp.vacances}" step="0.5" min="0" style="${inpStyle}"></td>
+                  <td><input type="number" class="solde-mal" value="${emp.maladie}"  step="0.5" min="0" style="${inpStyle}"></td>
+                  <td><button class="btn-primary solde-save">💾 Enregistrer</button></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      wrap.querySelectorAll('.solde-save').forEach(btn => {
+        btn.onclick = async () => {
+          const tr = btn.closest('tr');
+          const email    = tr.dataset.email;
+          const nom      = tr.dataset.nom;
+          const vacances = parseFloat(tr.querySelector('.solde-vac').value) || 0;
+          const maladie  = parseFloat(tr.querySelector('.solde-mal').value) || 0;
+          btn.disabled = true;
+          const orig = btn.textContent;
+          btn.textContent = '⏳';
+          try {
+            await Graph.upsertSolde({ email, nom, vacances, maladie });
+            btn.textContent = '✓ Sauvé';
+            this.showToast('Solde mis à jour', 'success');
+            setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 1500);
+          } catch (err) {
+            btn.textContent = '❌';
+            this.showToast('Erreur : ' + err.message, 'error');
+            setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2000);
+          }
+        };
+      });
+    } catch (err) {
+      wrap.innerHTML = `<div class="error">Erreur : ${err.message}</div>`;
+    }
   },
 
   // ── ADMIN ─────────────────────────────────────────────────────────────────
