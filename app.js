@@ -676,18 +676,17 @@ const App = {
   },
 
   _updateTVClock() {
-    const wrap = document.querySelector('#tab-tv .tv-clock');
-    if (!wrap) return;
+    const el = document.querySelector('.tv-clock');
+    if (!el) return;
     const now = new Date();
-    const est = now.toLocaleTimeString('fr-CA', { timeZone: 'America/Toronto', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false }).replace(/^(\d+):(\d+):(\d+)$/, '$1 h $2 min $3 s');
-    const jp  = now.toLocaleTimeString('fr-CA', { timeZone: 'Asia/Tokyo', hour:'2-digit', minute:'2-digit', hour12:false });
-    const dt  = now.toLocaleDateString('fr-CA', { timeZone: 'America/Toronto', weekday:'long', day:'numeric', month:'long', year:'numeric' });
-    const estEl = wrap.querySelector('.time-est');
-    const dEl   = wrap.querySelector('.date');
-    const jpEl  = wrap.querySelector('.time-jp');
-    if (estEl) estEl.textContent = est;
-    if (dEl)   dEl.textContent = dt + ' • EST';
-    if (jpEl)  jpEl.textContent = '🇯🇵 Tokyo ' + jp;
+    const mtrT = now.toLocaleTimeString('fr-CA', { timeZone: 'America/Toronto', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+    const mtrD = now.toLocaleDateString('fr-CA', { timeZone: 'America/Toronto', weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    const jpT  = now.toLocaleTimeString('fr-CA', { timeZone: 'Asia/Tokyo',     hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+    const jpD  = now.toLocaleDateString('fr-CA', { timeZone: 'Asia/Tokyo',     weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    el.innerHTML = `
+      <div class="line-mtr"><span class="city">📍 Montréal</span> <span class="time">${mtrT}</span> <span class="date">${mtrD}</span></div>
+      <div class="line-jp"><span class="city">🇯🇵 Tokyo</span> <span class="time">${jpT}</span> <span class="date">${jpD}</span></div>
+    `;
   },
 
   async _refreshTV() {
@@ -701,38 +700,73 @@ const App = {
   },
 
   _renderTV(statuses) {
-    const presents = statuses.filter(p => CONFIG.STATUTS.find(s => s.label === p.StatutActuel)?.category === 'present');
-    const absents  = statuses.filter(p => CONFIG.STATUTS.find(s => s.label === p.StatutActuel)?.category === 'absent');
+    // Mapper chaque statut à un groupe
+    const GROUPES = [
+      { id: 'travail',   label: '🏢 Au bureau',      ids: ['bureau', 'teletravail'],                 color: 'var(--success)' },
+      { id: 'clients',   label: '🚗 Chez clients',   ids: ['route_bip', 'route_cv247'],              color: '#c084fc' },
+      { id: 'formation', label: '📚 Formation',      ids: ['formation'],                              color: 'var(--info)' },
+      { id: 'courte',    label: '☕ Pause / RDV',    ids: ['pause', 'diner', 'rdv_perso', 'quart_fini'], color: 'var(--warning)' },
+      { id: 'conges',    label: '🏖️ Congés',         ids: ['vacances', 'malade'],                    color: 'var(--danger)' },
+    ];
 
-    const tvClockHtml = `
-          <div class="tv-clock">
-            <div class="time-est">--</div>
-            <div class="date">—</div>
-            <div class="time-jp">🇯🇵 Tokyo --:--</div>
-          </div>`;
+    // Grouper les employés
+    const byGroup = {};
+    GROUPES.forEach(g => byGroup[g.id] = []);
+    for (const p of statuses) {
+      const st = CONFIG.STATUTS.find(s => s.label === p.StatutActuel);
+      if (!st) continue;
+      const groupe = GROUPES.find(g => g.ids.includes(st.id));
+      if (groupe) byGroup[groupe.id].push({ ...p, st });
+    }
+
+    const totalPresents = byGroup.travail.length + byGroup.clients.length + byGroup.formation.length;
+    const totalAbsents  = byGroup.courte.length + byGroup.conges.length;
+    const total = totalPresents + totalAbsents;
 
     setTimeout(() => this._updateTVClock(), 0);
 
     return `
       <div class="tv-wrap">
         <div class="tv-hdr">
-          <span class="tv-logo">BlackIP360</span>
-          ${tvClockHtml}
-          <span class="tv-totals">${presents.length} présents · ${absents.length} absents · ${statuses.length} total</span>
+          <div class="tv-logo-wrap">
+            <img src="Logo.png" alt="BlackIP360" style="height:50px;width:auto;max-width:220px" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+            <div class="tv-logo-fallback" style="display:none;align-items:center;gap:14px">
+              <div class="tv-logo-box">B</div>
+              <div class="tv-logo-txt"><div class="t1">BlackIP360</div><div class="t2">Présences</div></div>
+            </div>
+          </div>
+          <div class="tv-clock"></div>
         </div>
 
-        <div class="tv-cols">
-          <div class="tv-col">
-            <div class="tv-col-hdr present-hdr">✅ Au travail (${presents.length})</div>
-            <div class="tv-grid">${presents.map(p => this._renderTVCard(p)).join('')}</div>
-          </div>
-          <div class="tv-col">
-            <div class="tv-col-hdr absent-hdr">🔴 Absents (${absents.length})</div>
-            <div class="tv-grid">${absents.map(p => this._renderTVCard(p)).join('')}</div>
-          </div>
+        <div class="tv-totals">
+          <div class="col-present"><div class="tv-n">${totalPresents}</div><div class="tv-l">Au travail</div></div>
+          <div class="col-clients"><div class="tv-n">${byGroup.clients.length}</div><div class="tv-l">Chez clients</div></div>
+          <div class="col-absent"><div class="tv-n">${totalAbsents}</div><div class="tv-l">Absents</div></div>
+          <div class="col-total"><div class="tv-n">${total}</div><div class="tv-l">Total</div></div>
         </div>
 
-        <div class="tv-ftr">Actualisation automatique toutes les ${CONFIG.TV_REFRESH_MS / 1000} s</div>
+        ${GROUPES.map(g => byGroup[g.id].length ? `
+          <div class="tv-group">
+            <h3 class="tv-group-hdr" style="color:${g.color}">${g.label} (${byGroup[g.id].length})</h3>
+            <div class="tv-grid">
+              ${byGroup[g.id].map(p => {
+                const initials = (p.EmployeNom || '?').split(' ').map(x => x[0]).slice(0,2).join('').toUpperCase();
+                return `
+                  <div class="tv-card" style="border-top-color:${g.color}">
+                    <div class="tv-card-top">
+                      <div class="tv-avatar">${initials}</div>
+                      <div class="tv-name-wrap">
+                        <div class="tv-name">${p.EmployeNom || '—'}</div>
+                        <div class="tv-dept">${p.Departement || ''}</div>
+                      </div>
+                    </div>
+                    <div class="tv-statut-pill">${p.st.icon} ${p.StatutActuel}</div>
+                    <div class="tv-time">Depuis ${this._fmtTime(p.HeurePointage)}</div>
+                  </div>`;
+              }).join('')}
+            </div>
+          </div>
+        ` : '').join('')}
       </div>`;
   },
 
@@ -935,13 +969,9 @@ const App = {
 
   // ── ACCÈS ─────────────────────────────────────────────────────────────────
   async _loadAcces() {
-    const configOk = id => id && id !== 'VOTRE_CLIENT_ID' && id !== 'VOTRE_TENANT_ID';
-    const sp = `https://${CONFIG.SHAREPOINT_HOST}${CONFIG.SHAREPOINT_SITE_PATH}`;
-
     document.getElementById('tab-acces').innerHTML = `
-      <div class="acces-wrap" style="max-width:860px">
-
-        <h2>Configuration &amp; Guide d'administration</h2>
+      <div class="acces-wrap" style="max-width:1200px">
+        <h2>🔑 Gestion des accès</h2>
 
         ${this.isAdmin ? `
           <div class="acces-card">
@@ -952,130 +982,27 @@ const App = {
             </p>
             <div id="accesSoldesWrap"><div class="loading">Chargement…</div></div>
           </div>
-        ` : ''}
 
-        <!-- État actuel -->
-        <div class="acces-card">
-          <h3>État de la configuration</h3>
-          <table>
-            <tr><td>Client ID Azure AD</td><td><code>${CONFIG.CLIENT_ID}</code></td></tr>
-            <tr><td>Tenant ID</td>         <td><code>${CONFIG.TENANT_ID}</code></td></tr>
-            <tr><td>Site SharePoint</td>   <td><code>${CONFIG.SHAREPOINT_HOST}${CONFIG.SHAREPOINT_SITE_PATH}</code></td></tr>
-            <tr><td>Liste</td>             <td><code>${CONFIG.SHAREPOINT_LIST}</code></td></tr>
-            <tr><td>URL de l'app</td>      <td><code>${CONFIG.APP_URL}</code></td></tr>
-            <tr><td>Utilisateur connecté</td><td><code>${this.user?.email || '—'}</code></td></tr>
-            <tr><td>Accès admin</td>       <td>${this.isAdmin ? '✅ Oui' : '❌ Non'}</td></tr>
-          </table>
-        </div>
-
-        <!-- Checklist déploiement -->
-        <div class="acces-card">
-          <h3>Checklist de déploiement</h3>
-          <ol class="checklist">
-            <li class="${configOk(CONFIG.CLIENT_ID) ? 'done' : 'todo'}">App Azure AD enregistrée (CLIENT_ID dans config.js)</li>
-            <li class="done">Permissions Graph API accordées (User.Read + Sites.ReadWrite.All)</li>
-            <li class="done">Liste SharePoint <code>${CONFIG.SHAREPOINT_LIST}</code> créée avec les bonnes colonnes</li>
-            <li class="${CONFIG.APP_URL.includes('YOUR_GITHUB') ? 'todo' : 'done'}">GitHub Pages déployé — <code>${CONFIG.APP_URL}</code></li>
-            <li class="todo">Manifest Teams mis à jour et déployé (onglet dans Teams)</li>
-          </ol>
-        </div>
-
-        <!-- Ajouter un utilisateur -->
-        <div class="acces-card">
-          <h3>➕ Ajouter un utilisateur</h3>
-          <p style="font-size:.9rem;line-height:1.7;margin-bottom:12px">
-            <strong>Aucune configuration requise.</strong> Tout employé avec un compte <code>@blackip360.com</code> dans Azure AD peut se connecter automatiquement.
-          </p>
-          <p style="font-size:.9rem;line-height:1.7">
-            Leur premier pointage crée automatiquement leur entrée dans la liste SharePoint.
-          </p>
-        </div>
-
-        <!-- Accès admin -->
-        <div class="acces-card">
-          <h3>🔑 Donner l'accès administrateur</h3>
-          <p style="font-size:.9rem;line-height:1.7;margin-bottom:12px">
-            Deux façons de rendre un utilisateur admin :
-          </p>
-          <ol style="font-size:.9rem;line-height:2;padding-left:20px">
-            <li>
-              <strong>Par email (immédiat)</strong> — Ajouter l'adresse dans <code>app.js</code>, fonction <code>_checkAdmin()</code> :
-              <br><code>const adminEmails = ['admin@blackip360.com', 'tech@blackip360.com', 'tfournier@blackip360.com', 'nouveau@blackip360.com'];</code>
-            </li>
-            <li>
-              <strong>Par département Azure AD</strong> — Définir le département de l'utilisateur à <code>Direction</code> dans Azure AD (portail Azure → Utilisateurs → Profil).
-              La détection est automatique à la prochaine connexion.
-            </li>
-          </ol>
-        </div>
-
-        <!-- Statuts -->
-        <div class="acces-card">
-          <h3>🎨 Modifier les statuts</h3>
-          <p style="font-size:.9rem;line-height:1.7;margin-bottom:12px">
-            Les statuts sont définis dans <code>config.js</code>, tableau <code>STATUTS</code>. Chaque statut a :
-          </p>
-          <table>
-            <thead><tr><th>Propriété</th><th>Description</th><th>Exemple</th></tr></thead>
-            <tbody>
-              <tr><td><code>id</code></td>      <td>Identifiant unique</td>      <td><code>bureau</code></td></tr>
-              <tr><td><code>label</code></td>   <td>Texte affiché</td>           <td><code>Je suis là au bureau</code></td></tr>
-              <tr><td><code>icon</code></td>    <td>Emoji</td>                   <td><code>🏢</code></td></tr>
-              <tr><td><code>color</code></td>   <td>Couleur hex du bouton</td>   <td><code>#198754</code></td></tr>
-              <tr><td><code>category</code></td><td><code>present</code> ou <code>absent</code></td><td><code>present</code></td></tr>
-            </tbody>
-          </table>
-          <p style="font-size:.85rem;color:var(--muted);margin-top:10px">⚠️ Le <code>label</code> est la valeur enregistrée dans SharePoint. Ne pas le modifier sans mettre à jour les données existantes.</p>
-        </div>
-
-        <!-- Colonnes SharePoint -->
-        <div class="acces-card">
-          <h3>📋 Colonnes SharePoint requises</h3>
-          <table>
-            <thead><tr><th>Nom interne</th><th>Type</th><th>Obligatoire</th></tr></thead>
-            <tbody>
-              <tr><td><code>EmployeNom</code></td>    <td>Ligne de texte</td>  <td>✅</td></tr>
-              <tr><td><code>EmployeEmail</code></td>  <td>Ligne de texte</td>  <td>✅ (indexer pour perf.)</td></tr>
-              <tr><td><code>Departement</code></td>   <td>Ligne de texte</td>  <td>✅</td></tr>
-              <tr><td><code>StatutActuel</code></td>  <td>Ligne de texte</td>  <td>✅</td></tr>
-              <tr><td><code>HeurePointage</code></td> <td>Date et heure</td>   <td>✅</td></tr>
-              <tr><td><code>Notes</code></td>         <td>Ligne de texte</td>  <td>Non</td></tr>
-            </tbody>
-          </table>
-          <div class="link-row" style="margin-top:14px">
-            <a class="ext-link" href="${sp}/Lists/${CONFIG.SHAREPOINT_LIST}" target="_blank">📋 Ouvrir la liste</a>
-            <a class="ext-link" href="${sp}/_layouts/15/listedit.aspx?List=${CONFIG.SHAREPOINT_LIST}" target="_blank">⚙️ Paramètres de la liste</a>
+          <div class="acces-card">
+            <h3>📚 Documentation</h3>
+            <p class="muted" style="margin-bottom:14px;font-size:.85rem">
+              Consultez le guide d'administration complet pour la configuration, l'ajout d'utilisateurs, les statuts et les départements.
+            </p>
+            <div class="link-row">
+              <a class="ext-link" href="GUIDE_ADMIN.html" target="_blank">📄 Ouvrir le guide admin (HTML)</a>
+              <a class="ext-link" href="GUIDE_ADMIN.html" target="_blank" onclick="setTimeout(()=>window.print(),500)">🖨 Imprimer en PDF</a>
+            </div>
           </div>
-        </div>
-
-        <!-- Départements -->
-        <div class="acces-card">
-          <h3>🏢 Modifier les départements</h3>
-          <p style="font-size:.9rem;line-height:1.7">
-            La liste des départements est dans <code>config.js</code>, tableau <code>DEPARTEMENTS</code> :<br>
-            <code>DEPARTEMENTS: ['Tous', 'Direction', 'Développement', 'Infrastructure', 'Support', 'Administration']</code><br>
-            Ajouter ou retirer des entrées selon votre organisation. Le premier élément doit rester <code>'Tous'</code>.
-          </p>
-        </div>
-
-        <!-- Liens -->
-        <div class="acces-card">
-          <h3>🔗 Raccourcis portail</h3>
-          <div class="link-row">
-            <a class="ext-link" href="https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/RegisteredApps" target="_blank">🔐 Azure AD — App</a>
-            <a class="ext-link" href="${sp}" target="_blank">📁 Site SharePoint</a>
-            <a class="ext-link" href="https://admin.microsoft.com" target="_blank">⚙️ M365 Admin</a>
-            <a class="ext-link" href="https://github.com/Blackip360tech/presences-blackip360-dev/actions" target="_blank">🚀 GitHub Actions (DEV)</a>
+        ` : `
+          <div class="acces-card">
+            <p class="muted">Cette section est réservée aux administrateurs.</p>
           </div>
-        </div>
-
+        `}
       </div>`;
 
     if (this.isAdmin) {
-      // Réutiliser _renderSoldesAdmin mais cibler le nouveau wrap
       const newWrap = document.getElementById('accesSoldesWrap');
       if (newWrap) {
-        // Créer un div temporaire avec l'id attendu par _renderSoldesAdmin
         newWrap.id = 'soldesAdminWrap';
         await this._renderSoldesAdmin();
         newWrap.id = 'accesSoldesWrap';
@@ -1118,20 +1045,21 @@ const App = {
   _startClock() {
     const el = document.getElementById('hdrClock');
     if (!el) return;
+    const pad = n => String(n).padStart(2, '0');
     const tick = () => {
       const now = new Date();
-      const est = now.toLocaleTimeString('fr-CA', { timeZone: 'America/Toronto', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-      const jp  = now.toLocaleTimeString('fr-CA', { timeZone: 'Asia/Tokyo',     hour: '2-digit', minute: '2-digit', hour12: false });
-      const dt  = now.toLocaleDateString('fr-CA', { timeZone: 'America/Toronto', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-      const estEl = el.querySelector('.est');
-      const dEl   = el.querySelector('.date');
-      const jpEl  = el.querySelector('.jp');
-      if (estEl) estEl.textContent = est.replace(/:/g, ' : ').replace(/^(\d+) : (\d+) : (\d+)$/, '$1 h $2 min $3 s');
-      if (dEl)   dEl.textContent = dt + ' • EST';
-      if (jpEl)  jpEl.textContent = '🇯🇵 Tokyo ' + jp;
+      const mtrT = now.toLocaleTimeString('fr-CA', { timeZone: 'America/Toronto', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+      const mtrD = now.toLocaleDateString('fr-CA', { timeZone: 'America/Toronto', weekday:'short', day:'numeric', month:'short' });
+      const jpT  = now.toLocaleTimeString('fr-CA', { timeZone: 'Asia/Tokyo',     hour:'2-digit', minute:'2-digit', hour12:false });
+      const jpD  = now.toLocaleDateString('fr-CA', { timeZone: 'Asia/Tokyo',     weekday:'short', day:'numeric', month:'short' });
+      el.innerHTML = `
+        <div class="mtr">📍 Montréal · <b>${mtrT}</b> · ${mtrD}</div>
+        <div class="jp">🇯🇵 Tokyo · <b>${jpT}</b> · ${jpD}</div>
+      `;
     };
     tick();
-    setInterval(tick, 1000);
+    if (this._clockInterval) clearInterval(this._clockInterval);
+    this._clockInterval = setInterval(tick, 1000);
   },
 
   _fatalError(msg) {

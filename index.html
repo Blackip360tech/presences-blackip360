@@ -36,6 +36,9 @@
       --mono:         'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
     }
 
+    .login-logo-img { display: block; margin: 0 auto 24px; filter: brightness(1.1); }
+    .hdr-logo-img   { object-fit: contain; }
+
     /* ── Reset ──────────────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     [hidden] { display: none !important; }
@@ -163,16 +166,16 @@
 
     .hdr-clock {
       font-family: var(--mono);
-      font-size: .8rem;
+      font-size: .75rem;
       text-align: right;
-      line-height: 1.5;
+      line-height: 1.6;
       flex-shrink: 0;
       letter-spacing: 0;
     }
-    .hdr-clock > div { font-size: .8rem; }
-    .hdr-clock .est  { color: var(--primary); font-weight: 600; }
-    .hdr-clock .date { color: var(--muted); }
-    .hdr-clock .jp   { color: var(--muted); }
+    .hdr-clock > div { font-size: .75rem; }
+    .hdr-clock .mtr b { color: var(--primary); font-size: .85rem; }
+    .hdr-clock .jp  b { color: var(--info); font-size: .85rem; }
+    .hdr-clock .mtr, .hdr-clock .jp { color: var(--muted); }
 
     .user-chip {
       display: flex; align-items: center; gap: 10px;
@@ -514,10 +517,13 @@
     }
     .tv-logo-txt .t1 { font-size: 1.3rem; font-weight: 800; }
     .tv-logo-txt .t2 { font-size: .78rem; color: var(--muted); }
-    .tv-clock  { font-family: var(--mono); text-align: right; line-height: 1.2; }
-    .tv-clock .time-est { font-size: 1.8rem; color: var(--primary); font-weight: 700; }
-    .tv-clock .date     { font-size: .78rem; color: var(--muted); margin-top: 2px; }
-    .tv-clock .time-jp  { font-size: .85rem; color: var(--muted); margin-top: 4px; font-family: var(--mono); }
+    .tv-clock { font-family: var(--mono); text-align: right; line-height: 1.6; }
+    .tv-clock .line-mtr, .tv-clock .line-jp { display: flex; gap: 16px; align-items: baseline; justify-content: flex-end; margin-bottom: 6px; }
+    .tv-clock .city { font-size: .9rem; color: var(--muted); min-width: 130px; text-align: left; }
+    .tv-clock .time { font-size: 1.6rem; font-weight: 700; letter-spacing: 0; min-width: 150px; }
+    .tv-clock .date { font-size: .85rem; color: var(--muted); min-width: 200px; text-align: left; }
+    .tv-clock .line-mtr .time { color: var(--primary); }
+    .tv-clock .line-jp  .time { color: var(--info); }
 
     .tv-totals {
       display: grid;
@@ -575,6 +581,9 @@
     }
     .tv-time { font-size: .7rem; color: var(--muted); font-family: var(--mono); }
     .tv-error  { color: var(--danger); text-align: center; padding: 40px; }
+
+    .tv-group { margin-top: 24px; }
+    .tv-group-hdr { font-size: 1.1rem; font-weight: 700; margin-bottom: 14px; text-transform: none; letter-spacing: 0; }
 
     /* ── PAYE ───────────────────────────────────────────────────────────── */
     .paye-header {
@@ -762,8 +771,8 @@
 <!-- ═══════════════════════════════════════════════════════════ LOGIN ══ -->
 <div id="loginScreen">
   <div class="login-card">
-    <div class="login-logo-box">B</div>
-    <div class="login-logo">BlackIP360</div>
+    <img src="Logo.png" alt="BlackIP360" class="login-logo-img" onerror="this.style.display='none';this.nextElementSibling.style.display='block'" style="max-width:260px;margin-bottom:24px">
+    <div class="login-logo" style="display:none">BlackIP360</div>
     <div class="login-sub">Système de gestion des présences</div>
 
     <button id="loginBtn">
@@ -780,8 +789,8 @@
 
   <header>
     <div class="hdr-brand">
-      <div class="hdr-logo-box">B</div>
-      <div class="hdr-title">
+      <img src="Logo.png" alt="BlackIP360" class="hdr-logo-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" style="height:40px;width:auto;max-width:180px">
+      <div class="hdr-title" style="display:none">
         <div class="t1">BlackIP360</div>
         <div class="t2">Système de présences</div>
       </div>
@@ -797,9 +806,8 @@
     </nav>
 
     <div id="hdrClock" class="hdr-clock">
-      <div class="est">--:--:--</div>
-      <div class="date">—</div>
-      <div class="jp">JP --:--</div>
+      <div class="mtr">📍 Montréal · <b>--:--:--</b> · —</div>
+      <div class="jp">🇯🇵 Tokyo · <b>--:--</b> · —</div>
     </div>
 
     <div class="user-chip">
@@ -838,10 +846,10 @@
     }
   };
 </script>
-<script src="config.js?v=16"></script>
-<script src="auth.js?v=16"></script>
-<script src="graph.js?v=16"></script>
-<script src="app.js?v=16"></script>
+<script src="config.js?v=18"></script>
+<script src="auth.js?v=18"></script>
+<script src="graph.js?v=18"></script>
+<script src="app.js?v=18"></script>
 
 </body>
 </html>

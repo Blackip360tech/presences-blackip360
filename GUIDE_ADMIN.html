@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Guide d'administration — BlackIP360 Présences</title>
+<style>
+  body { font-family: 'Segoe UI', system-ui, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px 40px; color: #333; line-height: 1.6; }
+  h1 { color: #293af2; border-bottom: 3px solid #293af2; padding-bottom: 10px; }
+  h2 { color: #293af2; margin-top: 40px; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
+  h3 { color: #1e2bc0; margin-top: 24px; }
+  code { background: #f4f4f4; padding: 2px 8px; border-radius: 4px; font-family: Consolas, monospace; font-size: .9em; color: #293af2; }
+  pre { background: #f4f4f4; padding: 16px; border-radius: 8px; overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; }
+  th, td { border: 1px solid #ddd; padding: 10px 14px; text-align: left; }
+  th { background: #293af2; color: white; }
+  .note { background: #fffbe6; border-left: 4px solid #fbbf24; padding: 12px 18px; margin: 16px 0; border-radius: 4px; }
+  .warning { background: #fff0f0; border-left: 4px solid #f85149; padding: 12px 18px; margin: 16px 0; border-radius: 4px; }
+  .ok { background: #f0fff4; border-left: 4px solid #2ea043; padding: 12px 18px; margin: 16px 0; border-radius: 4px; }
+  ol li, ul li { margin: 6px 0; }
+  @media print { body { margin: 0; padding: 20px; } h1, h2 { page-break-after: avoid; } }
+  .header-logo { text-align: center; margin-bottom: 20px; }
+  .header-logo .box { display: inline-block; width: 64px; height: 64px; background: #293af2; border-radius: 16px; line-height: 64px; font-size: 2rem; font-weight: 900; color: #fff; }
+  .toc { background: #f7f9ff; padding: 16px 24px; border-radius: 8px; margin-bottom: 30px; }
+  .toc a { color: #293af2; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="header-logo">
+  <div class="box">B</div>
+  <h1 style="border:none;margin-top:10px">Guide d'administration</h1>
+  <p style="color:#666;margin-top:-8px">BlackIP360 — Système de présences</p>
+</div>
+
+<div class="toc">
+  <strong>Table des matières</strong>
+  <ol>
+    <li><a href="#intro">Introduction</a></li>
+    <li><a href="#conf">Configuration actuelle</a></li>
+    <li><a href="#users">Ajouter un utilisateur</a></li>
+    <li><a href="#admin">Donner l'accès administrateur</a></li>
+    <li><a href="#statuts">Modifier les statuts</a></li>
+    <li><a href="#depts">Modifier les départements</a></li>
+    <li><a href="#conges">Gestion des congés et soldes</a></li>
+    <li><a href="#sp">Structure SharePoint</a></li>
+    <li><a href="#deploy">Déploiement</a></li>
+    <li><a href="#liens">Raccourcis portail</a></li>
+  </ol>
+</div>
+
+<h2 id="intro">1. Introduction</h2>
+<p>BlackIP360 Présences est un système de gestion des présences qui s'intègre avec Microsoft 365 (Azure AD + SharePoint). L'application permet aux employés de pointer leur statut en temps réel, de soumettre des demandes de congé, et aux administrateurs de générer des rapports de paie.</p>
+<p><strong>Technologies :</strong> HTML/CSS/JavaScript (pas de backend), MSAL.js pour l'authentification, Microsoft Graph API pour la lecture/écriture SharePoint.</p>
+
+<h2 id="conf">2. Configuration actuelle</h2>
+<p>Tous les paramètres sont dans le fichier <code>config.js</code> :</p>
+<ul>
+  <li><code>CLIENT_ID</code> — ID de l'application Azure AD</li>
+  <li><code>TENANT_ID</code> — ID du tenant Microsoft 365</li>
+  <li><code>SHAREPOINT_HOST</code> — domaine SharePoint</li>
+  <li><code>SHAREPOINT_SITE_PATH</code> — chemin du site SharePoint</li>
+  <li><code>SHAREPOINT_LIST</code> — nom de la liste des pointages</li>
+  <li><code>SHAREPOINT_LIST_SOLDES</code> — liste des soldes de congés</li>
+  <li><code>SHAREPOINT_LIST_DEMANDES</code> — liste des demandes de congé</li>
+  <li><code>APP_URL</code> — URL publique GitHub Pages</li>
+  <li><code>STATUTS</code> — liste des 11 statuts disponibles</li>
+  <li><code>DEPARTEMENTS</code> — liste des départements</li>
+  <li><code>TYPES_CONGE</code> — types de congé pour les demandes</li>
+</ul>
+
+<h2 id="users">3. Ajouter un utilisateur</h2>
+<div class="ok"><strong>Aucune action requise.</strong> Tout employé avec un compte <code>@blackip360.com</code> dans Azure AD peut se connecter automatiquement à l'application.</div>
+<p>Le premier pointage crée l'entrée SharePoint de l'employé. Ensuite l'admin peut :</p>
+<ul>
+  <li>Lui assigner un département via l'onglet <strong>Accès</strong></li>
+  <li>Initialiser ses soldes de vacances et maladie</li>
+</ul>
+
+<h2 id="admin">4. Donner l'accès administrateur</h2>
+<p>Deux façons de rendre un utilisateur administrateur :</p>
+<h3>Par email (immédiat)</h3>
+<p>Modifier la liste <code>adminEmails</code> dans <code>app.js</code> (méthode <code>_checkAdmin()</code>) :</p>
+<pre>const adminEmails = [
+  'admin@blackip360.com',
+  'tech@blackip360.com',
+  'tfournier@blackip360.com',
+  // Ajouter ici
+];</pre>
+<h3>Par département Azure AD</h3>
+<p>Toute personne dont le département dans Azure AD est <code>Direction</code> devient automatiquement admin. À configurer depuis le <a href="https://portal.azure.com">portail Azure</a> → Utilisateurs → Profil → Département.</p>
+
+<h2 id="statuts">5. Modifier les statuts</h2>
+<p>Les 11 statuts sont définis dans <code>config.js</code>, tableau <code>STATUTS</code>. Chaque statut a :</p>
+<table>
+  <thead><tr><th>Propriété</th><th>Description</th><th>Exemple</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>Identifiant unique</td><td><code>bureau</code></td></tr>
+    <tr><td><code>label</code></td><td>Texte affiché (enregistré dans SharePoint)</td><td><code>Je suis là au bureau</code></td></tr>
+    <tr><td><code>icon</code></td><td>Emoji</td><td>🏢</td></tr>
+    <tr><td><code>color</code></td><td>Couleur hex du bouton</td><td><code>#198754</code></td></tr>
+    <tr><td><code>category</code></td><td><code>present</code> ou <code>absent</code></td><td><code>present</code></td></tr>
+  </tbody>
+</table>
+<div class="warning">⚠️ Le <code>label</code> est la valeur stockée en SharePoint. Ne pas le modifier sans mettre à jour les données existantes — sinon les pointages antérieurs perdent leur icône/couleur.</div>
+<p><strong>Note :</strong> les statuts avec <code>id: route_bip</code> ou <code>route_cv247</code> forcent une note obligatoire au moment du pointage (nom du client).</p>
+
+<h2 id="depts">6. Modifier les départements</h2>
+<p>Dans <code>config.js</code>, tableau <code>DEPARTEMENTS</code> :</p>
+<pre>DEPARTEMENTS: [
+  'Tous',
+  'Direction',
+  'Développement',
+  'Infrastructure',
+  'Support',
+  'Administration',
+],</pre>
+<p>Le premier élément doit toujours être <code>'Tous'</code> (utilisé dans les filtres). Les autres sont modifiables librement.</p>
+<p>L'assignation du département à un employé se fait depuis l'onglet <strong>Accès</strong> de l'application.</p>
+
+<h2 id="conges">7. Gestion des congés et soldes</h2>
+<h3>Types de congé</h3>
+<ul>
+  <li>🌴 <strong>Vacances</strong> — déduit du solde vacances quand approuvé</li>
+  <li>🤒 <strong>Maladie</strong> — déduit du solde maladie quand approuvé</li>
+  <li>📋 <strong>Sans solde</strong> — enregistré sans déduction</li>
+</ul>
+<h3>Workflow de demande</h3>
+<ol>
+  <li>L'employé soumet une demande dans l'onglet <strong>Mes demandes</strong></li>
+  <li>La demande apparaît chez l'admin (même onglet, section admin)</li>
+  <li>L'admin clique <strong>Approuver</strong> ou <strong>Refuser</strong> avec une note optionnelle</li>
+  <li>Si approuvée pour Vacances/Maladie, le solde de l'employé est automatiquement déduit</li>
+</ol>
+<h3>Initialiser les soldes</h3>
+<p>Pour chaque employé, aller dans l'onglet <strong>Accès</strong> → <strong>Gestion des utilisateurs</strong> et entrer :</p>
+<ul>
+  <li><strong>Vacances (h)</strong> — ex: <code>80</code> pour 10 jours</li>
+  <li><strong>Maladie (h)</strong> — ex: <code>40</code> pour 5 jours</li>
+</ul>
+
+<h2 id="sp">8. Structure SharePoint</h2>
+<h3>Liste Presences_Employes</h3>
+<table>
+  <thead><tr><th>Colonne</th><th>Type</th></tr></thead>
+  <tbody>
+    <tr><td><code>EmployeNom</code></td><td>Ligne de texte</td></tr>
+    <tr><td><code>EmployeEmail</code></td><td>Ligne de texte (indexée)</td></tr>
+    <tr><td><code>Departement</code></td><td>Ligne de texte</td></tr>
+    <tr><td><code>StatutActuel</code></td><td>Ligne de texte</td></tr>
+    <tr><td><code>HeurePointage</code></td><td>Date et heure</td></tr>
+    <tr><td><code>Notes</code></td><td>Ligne de texte</td></tr>
+  </tbody>
+</table>
+
+<h3>Liste Soldes_Conges</h3>
+<table>
+  <thead><tr><th>Colonne</th><th>Type</th></tr></thead>
+  <tbody>
+    <tr><td><code>EmployeEmail</code></td><td>Ligne de texte (indexée)</td></tr>
+    <tr><td><code>EmployeNom</code></td><td>Ligne de texte</td></tr>
+    <tr><td><code>Departement</code></td><td>Ligne de texte</td></tr>
+    <tr><td><code>SoldeVacancesHeures</code></td><td>Nombre</td></tr>
+    <tr><td><code>SoldeMaladieHeures</code></td><td>Nombre</td></tr>
+  </tbody>
+</table>
+
+<h3>Liste Demandes_Conges</h3>
+<table>
+  <thead><tr><th>Colonne</th><th>Type</th></tr></thead>
+  <tbody>
+    <tr><td><code>EmployeEmail</code></td><td>Ligne de texte</td></tr>
+    <tr><td><code>EmployeNom</code></td><td>Ligne de texte</td></tr>
+    <tr><td><code>TypeConge</code></td><td>Choix (Vacances / Sans solde / Maladie)</td></tr>
+    <tr><td><code>DateDebut</code></td><td>Date et heure</td></tr>
+    <tr><td><code>DateFin</code></td><td>Date et heure</td></tr>
+    <tr><td><code>NombreHeures</code></td><td>Nombre</td></tr>
+    <tr><td><code>Motif</code></td><td>Plusieurs lignes de texte</td></tr>
+    <tr><td><code>Statut</code></td><td>Choix (En attente / Approuvée / Refusée)</td></tr>
+    <tr><td><code>DateDecision</code></td><td>Date et heure</td></tr>
+    <tr><td><code>Approbateur</code></td><td>Ligne de texte</td></tr>
+    <tr><td><code>NotesApprobateur</code></td><td>Plusieurs lignes de texte</td></tr>
+  </tbody>
+</table>
+
+<h2 id="deploy">9. Déploiement</h2>
+<p>L'application est hébergée sur GitHub Pages via GitHub Actions. Tout commit sur la branche <code>main</code> déclenche un déploiement automatique.</p>
+<ul>
+  <li><strong>Environnement DEV</strong> : <code>https://blackip360tech.github.io/presences-blackip360-dev</code></li>
+  <li><strong>Environnement PROD</strong> : <code>https://blackip360tech.github.io/presences-blackip360</code></li>
+</ul>
+<p>Après un commit, le déploiement prend environ 2 minutes. Vérifier l'état dans l'onglet <strong>Actions</strong> du dépôt GitHub.</p>
+
+<h2 id="liens">10. Raccourcis portail</h2>
+<ul>
+  <li><a href="https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/RegisteredApps">🔐 Azure AD — App registrations</a></li>
+  <li><a href="https://blackip360.sharepoint.com/sites/PlanificationTI">📁 Site SharePoint PlanificationTI</a></li>
+  <li><a href="https://admin.microsoft.com">⚙️ Microsoft 365 Admin Center</a></li>
+  <li><a href="https://github.com/Blackip360tech/presences-blackip360-dev/actions">🚀 GitHub Actions (DEV)</a></li>
+</ul>
+
+<hr style="margin-top:50px">
+<p style="text-align:center;color:#999;font-size:.85rem">BlackIP360 — Système de présences · Guide d'administration · 2026</p>
+
+</body>
+</html>
