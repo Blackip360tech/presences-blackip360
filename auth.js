@@ -31,6 +31,11 @@ class BlackIPAuth {
     }
   }
 
+  // Codes d'erreur qui forcent le fallback en redirect plutôt que popup
+  _isPopupBlocked(err) {
+    return ['popup_window_error', 'block_nested_popups', 'empty_window_error'].includes(err.errorCode);
+  }
+
   async login() {
     const req = { scopes: CONFIG.SCOPES };
     try {
@@ -38,8 +43,7 @@ class BlackIPAuth {
       this.account = r.account;
       return r.account;
     } catch (err) {
-      // Popup bloqué (Teams) → redirect
-      if (err.errorCode === 'popup_window_error') {
+      if (this._isPopupBlocked(err)) {
         await this.msal.loginRedirect(req);
         return;
       }
@@ -48,7 +52,15 @@ class BlackIPAuth {
   }
 
   async logout() {
-    await this.msal.logoutPopup({ account: this.account });
+    try {
+      await this.msal.logoutPopup({ account: this.account });
+    } catch (err) {
+      if (this._isPopupBlocked(err)) {
+        await this.msal.logoutRedirect({ account: this.account });
+        return;
+      }
+      throw err;
+    }
     this.account = null;
   }
 
@@ -62,11 +74,19 @@ class BlackIPAuth {
       return r.accessToken;
     } catch (err) {
       if (err instanceof msal.InteractionRequiredAuthError) {
-        const r = await this.msal.acquireTokenPopup({
-          scopes:  CONFIG.SCOPES,
-          account: this.account,
-        });
-        return r.accessToken;
+        try {
+          const r = await this.msal.acquireTokenPopup({
+            scopes:  CONFIG.SCOPES,
+            account: this.account,
+          });
+          return r.accessToken;
+        } catch (popupErr) {
+          if (this._isPopupBlocked(popupErr)) {
+            await this.msal.acquireTokenRedirect({ scopes: CONFIG.SCOPES, account: this.account });
+            return;
+          }
+          throw popupErr;
+        }
       }
       throw err;
     }
