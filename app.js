@@ -93,7 +93,27 @@ const App = {
     this._showApp();
     this._renderHeader();
 
-    await this.loadTab('statut');
+    // Mode TV plein écran si ?tv=1
+    const params = new URLSearchParams(window.location.search);
+    const tvMode = params.get('tv') === '1';
+    const requestedTab = params.get('tab') || 'statut';
+
+    if (tvMode) {
+      document.querySelector('header')?.setAttribute('hidden', '');
+      document.querySelector('main').style.padding = '0';
+      document.querySelector('main').style.maxWidth = '100%';
+      await this.switchTab('tv');
+    } else {
+      await this.loadTab(requestedTab);
+      // Activer le bon onglet dans la nav
+      document.querySelectorAll('.tab-btn').forEach(btn =>
+        btn.classList.toggle('active', btn.dataset.tab === requestedTab)
+      );
+      document.querySelectorAll('.tab-content').forEach(div => {
+        div.hidden = div.id !== `tab-${requestedTab}`;
+      });
+      this.activeTab = requestedTab;
+    }
   },
 
   _checkAdmin() {
