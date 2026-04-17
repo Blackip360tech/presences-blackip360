@@ -605,6 +605,45 @@ const App = {
     }
   },
 
+  // ── CALCUL DES HEURES TRAVAILLÉES ─────────────────────────────────────────
+  // Règles :
+  //  - Statuts "présents" (bureau, télétravail, clients, formation) = temps compté
+  //  - Pause = comptée jusqu'à 30 min/jour (2×15 min)
+  //  - Dîner = non payé
+  //  - Autres absences = non comptées
+  //  - Quart_fini ferme la journée
+  //  - Un pointage "présent" sans pointage suivant = temps non compté après (employé doit fermer)
+  _calculateDayMinutes(entries) {
+    if (!entries?.length) return { work: 0, pause: 0, total: 0 };
+    const PAUSE_CAP = 30;
+
+    const sorted = [...entries].sort((a, b) => new Date(a.HeurePointage) - new Date(b.HeurePointage));
+    let workMin = 0, pauseMin = 0;
+
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const curr = sorted[i];
+      const next = sorted[i + 1];
+      const durMin = Math.max(0, (new Date(next.HeurePointage) - new Date(curr.HeurePointage)) / 60000);
+      const st = CONFIG.STATUTS.find(s => s.label === curr.StatutActuel);
+      if (!st) continue;
+      if (st.category === 'present') workMin += durMin;
+      else if (st.id === 'pause')    pauseMin += durMin;
+      // diner, rdv, vacances, malade, quart_fini : non comptés
+    }
+
+    const paidPause = Math.min(pauseMin, PAUSE_CAP);
+    return {
+      work:  workMin,
+      pause: pauseMin,
+      total: workMin + paidPause,
+    };
+  },
+
+  _calculateDayHours(entries) {
+    const m = this._calculateDayMinutes(entries);
+    return Math.round(m.total / 6) / 10; // arrondi à 0.1h près
+  },
+
   // ── MON RAPPORT ───────────────────────────────────────────────────────────
   _loadRapport() {
     const el = document.getElementById('tab-rapport');
@@ -681,7 +720,7 @@ const App = {
       const daysWithPresent = Object.entries(byDay).filter(([_, entries]) =>
         entries.some(e => CONFIG.STATUTS.find(s => s.label === e.StatutActuel)?.category === 'present')
       ).length;
-      const heuresEstimees = daysWithPresent * 8;
+      const heuresEstimees = Object.values(byDay).reduce((s, entries) => s + this._calculateDayHours(entries), 0).toFixed(1);
 
       const demandesApprouvees = demandes.filter(d => {
         if (d.Statut !== 'Approuvée') return false;
@@ -720,8 +759,7 @@ const App = {
               ${days.map(d => {
                 const key = d.toISOString().slice(0, 10);
                 const entries = (byDay[key] || []).slice().sort((a,b) => new Date(a.HeurePointage) - new Date(b.HeurePointage));
-                const hasPresent = entries.some(e => CONFIG.STATUTS.find(s => s.label === e.StatutActuel)?.category === 'present');
-                const hours = hasPresent ? 8 : 0;
+                const hours = this._calculateDayHours(entries);
                 const dayLabel = d.toLocaleDateString('fr-CA', { weekday: 'long', day: 'numeric', month: 'short' });
                 const isWeekend = d.getDay() === 0 || d.getDay() === 6;
                 return `
@@ -778,8 +816,7 @@ const App = {
     for (const d of days) {
       const key = d.toISOString().slice(0, 10);
       const entries = (byDay[key] || []).slice().sort((a,b) => new Date(a.HeurePointage) - new Date(b.HeurePointage));
-      const hasPresent = entries.some(e => CONFIG.STATUTS.find(s => s.label === e.StatutActuel)?.category === 'present');
-      const hours = hasPresent ? 8 : 0;
+      const hours = this._calculateDayHours(entries);
       const dayName = d.toLocaleDateString('fr-CA', { weekday: 'long' });
       if (!entries.length) {
         rows.push([key, dayName, '', '', hours]);
@@ -1194,12 +1231,13 @@ const App = {
           const entries = byDay[key] || [];
           const hasPresent = entries.some(e => CONFIG.STATUTS.find(s => s.label === e.StatutActuel)?.category === 'present');
           const hasAbsent  = entries.some(e => CONFIG.STATUTS.find(s => s.label === e.StatutActuel)?.category === 'absent');
-          if (isWeekend(d))      return { type: 'weekend', hours: 0 };
-          if (hasPresent)        return { type: 'present', hours: 8 };
-          if (hasAbsent)         return { type: 'absent',  hours: 0 };
+          if (isWeekend(d) && !hasPresent) return { type: 'weekend', hours: 0 };
+          const hours = this._calculateDayHours(entries);
+          if (hasPresent) return { type: 'present', hours };
+          if (hasAbsent)  return { type: 'absent',  hours: 0 };
           return { type: 'none', hours: 0 };
         });
-        const total = dayStates.reduce((s, x) => s + x.hours, 0);
+        const total = Math.round(dayStates.reduce((s, x) => s + x.hours, 0) * 10) / 10;
 
         // Congés pris dans la période (approuvés)
         const congesApprouves = allDemandes.filter(d =>
@@ -1335,10 +1373,9 @@ const App = {
       const dayHours = days.map(d => {
         const key = d.toISOString().slice(0, 10);
         const entries = byDay[key] || [];
-        const hasPresent = entries.some(e => CONFIG.STATUTS.find(s => s.label === e.StatutActuel)?.category === 'present');
-        return hasPresent ? 8 : 0;
+        return this._calculateDayHours(entries);
       });
-      const total = dayHours.reduce((a,b) => a+b, 0);
+      const total = Math.round(dayHours.reduce((a,b) => a+b, 0) * 10) / 10;
       rows.push([emp.nom, emp.email, emp.dept, ...dayHours, total]);
     }
     this._downloadCSV(rows, `paye_${fromStr}_${toStr}.csv`);
