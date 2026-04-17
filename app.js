@@ -9,26 +9,26 @@ const App = {
 
   // ── Initialisation ────────────────────────────────────────────────────────
   async init() {
+    const dbg = document.getElementById('loginError');
+    const step = (msg) => { if (dbg) { dbg.hidden = false; dbg.textContent = '⏳ ' + msg; } console.log('[APP]', msg); };
+
+    step('Démarrage...');
     try {
+      step('Auth.init() en cours...');
       await Auth.init();
+      step(`Auth.init() terminé — connecté: ${Auth.isLoggedIn()} — erreur: ${Auth.initError?.errorCode || 'non'}`);
 
-      // Afficher l'erreur MSAL si présente (aide au diagnostic)
-      if (Auth.initError) {
-        this._showLoginError(
-          `Erreur MSAL: ${Auth.initError.errorCode || Auth.initError.message}<br>
-           <small>${Auth.initError.errorMessage || ''}</small>`
-        );
-      }
-
-      // Stocker les comptes pour le debug
       this._msalAccounts = Auth.msal?.getAllAccounts()?.map(a => a.username) || [];
 
       if (Auth.isLoggedIn()) {
+        step('Connecté ! Chargement de l\'application...');
         await this._onLoginSuccess();
       } else {
         this._showDebug();
       }
     } catch (err) {
+      if (dbg) { dbg.hidden = false; dbg.style.background = '#fff0f0'; dbg.textContent = '❌ ERREUR JS: ' + err.message; }
+      console.error('[APP] init error:', err);
       this._fatalError('Erreur d\'initialisation: ' + err.message);
     }
   },

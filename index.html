@@ -584,10 +584,20 @@
 <div id="toast"></div>
 
 <!-- Scripts (ordre important) -->
-<script src="config.js"></script>
-<script src="auth.js"></script>
-<script src="graph.js"></script>
-<script src="app.js"></script>
+<script>
+  window.onerror = function(msg, src, line, col, err) {
+    var dbg = document.getElementById('loginError');
+    if (dbg) {
+      dbg.hidden = false;
+      dbg.style.background = '#fff0f0';
+      dbg.innerHTML += '<br>❌ <b>Erreur JS:</b> ' + msg + ' (' + (src||'').split('/').pop() + ':' + line + ')';
+    }
+  };
+</script>
+<script src="config.js?v=4"></script>
+<script src="auth.js?v=4"></script>
+<script src="graph.js?v=4"></script>
+<script src="app.js?v=4"></script>
 
 </body>
 </html>
