@@ -78,9 +78,11 @@ const App = {
       console.warn('[APP] Graph.getProfile() échec:', err.message);
     }
 
-    // Département depuis Soldes_Conges (source de vérité si admin l'a assigné)
+    // Département + permissions depuis Soldes_Conges (source de vérité)
+    this._userSolde = null;
     try {
       const solde = await Graph.getSolde(this.user.email);
+      this._userSolde = solde;
       if (solde.departement) {
         this.user.department = solde.departement;
         console.log('[APP] département override Soldes:', solde.departement);
@@ -95,12 +97,27 @@ const App = {
   },
 
   _checkAdmin() {
-    // Admins : département Direction ou liste explicite
-    const adminEmails = ['admin@blackip360.com', 'tech@blackip360.com', 'tfournier@blackip360.com', 'sstemarie@blackip360.com'];
-    this.isAdmin =
-      adminEmails.includes(this.user.email?.toLowerCase()) ||
-      this.user.department === 'Direction';
+    // Super-admins codés en dur (accès total)
+    const superAdmins = ['admin@blackip360.com', 'tech@blackip360.com', 'tfournier@blackip360.com', 'sstemarie@blackip360.com'];
+    const isSuper = superAdmins.includes(this.user.email?.toLowerCase());
+    const s = this._userSolde || {};
 
+    this.perms = {
+      canAdmin:     isSuper || !!s.canAdmin,
+      canTV:        isSuper || !!s.canTV,
+      canPaye:      isSuper || !!s.canPaye,
+      canAcces:     isSuper || !!s.canAcces,
+      canApprouver: isSuper || !!s.canApprouver,
+    };
+    // isAdmin = a au moins une permission admin (pour compatibilité)
+    this.isAdmin = isSuper || this.perms.canAdmin || this.perms.canTV || this.perms.canPaye || this.perms.canAcces || this.perms.canApprouver;
+
+    // Appliquer les permissions sur les éléments avec data-perm
+    document.querySelectorAll('[data-perm]').forEach(el => {
+      const p = el.dataset.perm;
+      el.style.display = this.perms[p] ? '' : 'none';
+    });
+    // Compat ascendante pour data-admin
     document.querySelectorAll('[data-admin]').forEach(el => {
       el.style.display = this.isAdmin ? '' : 'none';
     });
@@ -443,11 +460,16 @@ const App = {
           const newVac = dem.TypeConge === 'Vacances' ? Math.max(0, solde.vacances - (dem.NombreHeures || 0)) : solde.vacances;
           const newMal = dem.TypeConge === 'Maladie'  ? Math.max(0, solde.maladie  - (dem.NombreHeures || 0)) : solde.maladie;
           await Graph.upsertSolde({
-            email: dem.EmployeEmail,
-            nom: dem.EmployeNom || solde.nom,
-            departement: solde.departement || dem.Departement || '',
-            vacances: newVac,
-            maladie: newMal,
+            email:        dem.EmployeEmail,
+            nom:          dem.EmployeNom || solde.nom,
+            departement:  solde.departement || dem.Departement || '',
+            vacances:     newVac,
+            maladie:      newMal,
+            canAdmin:     solde.canAdmin,
+            canTV:        solde.canTV,
+            canPaye:      solde.canPaye,
+            canAcces:     solde.canAcces,
+            canApprouver: solde.canApprouver,
           });
         }
       }
@@ -491,30 +513,41 @@ const App = {
       const rows = Object.values(empMap).map(e => {
         const s = soldeMap[e.email.toLowerCase()] || {};
         return {
-          email:       e.email,
-          nom:         e.nom,
-          departement: s.departement || e.departement || '',
-          vacances:    s.vacances || 0,
-          maladie:     s.maladie  || 0,
+          email:        e.email,
+          nom:          e.nom,
+          departement:  s.departement || e.departement || '',
+          vacances:     s.vacances || 0,
+          maladie:      s.maladie  || 0,
+          canAdmin:     !!s.canAdmin,
+          canTV:        !!s.canTV,
+          canPaye:      !!s.canPaye,
+          canAcces:     !!s.canAcces,
+          canApprouver: !!s.canApprouver,
         };
       }).sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
 
-      const inpStyle = 'padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.85rem;width:100%';
-      const numStyle = inpStyle + ';width:90px;font-family:var(--mono)';
+      const selStyle = 'padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.8rem';
+      const numStyle = selStyle + ';width:72px;font-family:var(--mono)';
+      const cbStyle  = 'width:18px;height:18px;accent-color:var(--primary);cursor:pointer';
       const depts = CONFIG.DEPARTEMENTS.filter(d => d !== 'Tous');
 
       wrap.innerHTML = `
         <div class="filter-row">
           <input type="text" id="soldeSearch" placeholder="🔍 Rechercher un employé…">
         </div>
-        <div class="table-wrap">
-          <table>
+        <div class="table-wrap" style="overflow-x:auto">
+          <table class="perm-table" style="min-width:1100px">
             <thead>
               <tr>
                 <th>Employé</th>
                 <th>Département</th>
-                <th>🌴 Vacances (h)</th>
-                <th>🤒 Maladie (h)</th>
+                <th style="text-align:center" title="Voir l'onglet Admin">👥 Admin</th>
+                <th style="text-align:center" title="Voir l'affichage TV">📺 TV</th>
+                <th style="text-align:center" title="Voir le rapport paye">💰 Paye</th>
+                <th style="text-align:center" title="Gérer les utilisateurs">🔑 Accès</th>
+                <th style="text-align:center" title="Approuver demandes de congé">✓ Congés</th>
+                <th style="text-align:center">🌴 Vac.</th>
+                <th style="text-align:center">🤒 Mal.</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -526,14 +559,19 @@ const App = {
                     <span class="muted" style="font-size:.75rem">${emp.email}</span>
                   </td>
                   <td>
-                    <select class="solde-dept" style="${inpStyle}">
+                    <select class="solde-dept" style="${selStyle}">
                       <option value="">— Non défini —</option>
                       ${depts.map(d => `<option value="${d}"${d === emp.departement ? ' selected' : ''}>${d}</option>`).join('')}
                     </select>
                   </td>
-                  <td><input type="number" class="solde-vac" value="${emp.vacances}" step="0.5" min="0" style="${numStyle}"></td>
-                  <td><input type="number" class="solde-mal" value="${emp.maladie}"  step="0.5" min="0" style="${numStyle}"></td>
-                  <td><button class="btn-primary solde-save">💾 Enregistrer</button></td>
+                  <td style="text-align:center"><input type="checkbox" class="perm-admin"    ${emp.canAdmin     ? 'checked' : ''} style="${cbStyle}"></td>
+                  <td style="text-align:center"><input type="checkbox" class="perm-tv"       ${emp.canTV        ? 'checked' : ''} style="${cbStyle}"></td>
+                  <td style="text-align:center"><input type="checkbox" class="perm-paye"     ${emp.canPaye      ? 'checked' : ''} style="${cbStyle}"></td>
+                  <td style="text-align:center"><input type="checkbox" class="perm-acces"    ${emp.canAcces     ? 'checked' : ''} style="${cbStyle}"></td>
+                  <td style="text-align:center"><input type="checkbox" class="perm-approuver"${emp.canApprouver ? 'checked' : ''} style="${cbStyle}"></td>
+                  <td style="text-align:center"><input type="number" class="solde-vac" value="${emp.vacances}" step="0.5" min="0" style="${numStyle}"></td>
+                  <td style="text-align:center"><input type="number" class="solde-mal" value="${emp.maladie}"  step="0.5" min="0" style="${numStyle}"></td>
+                  <td><button class="btn-primary solde-save">💾</button></td>
                 </tr>
               `).join('')}
             </tbody>
@@ -554,17 +592,24 @@ const App = {
       wrap.querySelectorAll('.solde-save').forEach(btn => {
         btn.onclick = async () => {
           const tr = btn.closest('tr');
-          const email       = tr.dataset.email;
-          const nom         = tr.dataset.nom;
-          const departement = tr.querySelector('.solde-dept').value;
-          const vacances    = parseFloat(tr.querySelector('.solde-vac').value) || 0;
-          const maladie     = parseFloat(tr.querySelector('.solde-mal').value) || 0;
+          const payload = {
+            email:        tr.dataset.email,
+            nom:          tr.dataset.nom,
+            departement:  tr.querySelector('.solde-dept').value,
+            vacances:     parseFloat(tr.querySelector('.solde-vac').value) || 0,
+            maladie:      parseFloat(tr.querySelector('.solde-mal').value) || 0,
+            canAdmin:     tr.querySelector('.perm-admin').checked,
+            canTV:        tr.querySelector('.perm-tv').checked,
+            canPaye:      tr.querySelector('.perm-paye').checked,
+            canAcces:     tr.querySelector('.perm-acces').checked,
+            canApprouver: tr.querySelector('.perm-approuver').checked,
+          };
           btn.disabled = true;
           const orig = btn.textContent;
           btn.textContent = '⏳';
           try {
-            await Graph.upsertSolde({ email, nom, departement, vacances, maladie });
-            btn.textContent = '✓ Sauvé';
+            await Graph.upsertSolde(payload);
+            btn.textContent = '✓';
             this.showToast('Utilisateur mis à jour', 'success');
             setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 1500);
           } catch (err) {

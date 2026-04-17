@@ -36,11 +36,10 @@ const CONFIG = {
 
   DEPARTEMENTS: [
     'Tous',
-    'Direction',
-    'Développement',
-    'Infrastructure',
-    'Support',
     'Administration',
+    'Support BIP360',
+    'Support CV247',
+    'Comptabilité',
   ],
 
   // 11 statuts personnalisés BlackIP360

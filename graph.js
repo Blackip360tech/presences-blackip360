@@ -118,14 +118,19 @@ class GraphAPI {
     const filter = encodeURIComponent(`fields/EmployeEmail eq '${email}'`);
     const d = await this._call(`/sites/${sid}/lists/${lid}/items?$filter=${filter}&$expand=fields&$top=1`);
     const item = d.value?.[0];
-    if (!item) return { vacances: 0, maladie: 0, departement: '', email };
+    if (!item) return { vacances: 0, maladie: 0, departement: '', email, canAdmin: false, canTV: false, canPaye: false, canAcces: false, canApprouver: false };
     return {
-      id:          item.id,
-      email:       item.fields.EmployeEmail,
-      nom:         item.fields.EmployeNom,
-      departement: item.fields.Departement || '',
-      vacances:    Number(item.fields.SoldeVacancesHeures) || 0,
-      maladie:     Number(item.fields.SoldeMaladieHeures)  || 0,
+      id:           item.id,
+      email:        item.fields.EmployeEmail,
+      nom:          item.fields.EmployeNom,
+      departement:  item.fields.Departement || '',
+      vacances:     Number(item.fields.SoldeVacancesHeures) || 0,
+      maladie:      Number(item.fields.SoldeMaladieHeures)  || 0,
+      canAdmin:     !!item.fields.CanAdmin,
+      canTV:        !!item.fields.CanTV,
+      canPaye:      !!item.fields.CanPaye,
+      canAcces:     !!item.fields.CanAcces,
+      canApprouver: !!item.fields.CanApprouver,
     };
   }
 
@@ -134,16 +139,21 @@ class GraphAPI {
     const lid = await this._listIdForName(CONFIG.SHAREPOINT_LIST_SOLDES);
     const d = await this._call(`/sites/${sid}/lists/${lid}/items?$expand=fields&$top=500`);
     return (d.value || []).map(i => ({
-      id:          i.id,
-      email:       i.fields.EmployeEmail,
-      nom:         i.fields.EmployeNom,
-      departement: i.fields.Departement || '',
-      vacances:    Number(i.fields.SoldeVacancesHeures) || 0,
-      maladie:     Number(i.fields.SoldeMaladieHeures)  || 0,
+      id:           i.id,
+      email:        i.fields.EmployeEmail,
+      nom:          i.fields.EmployeNom,
+      departement:  i.fields.Departement || '',
+      vacances:     Number(i.fields.SoldeVacancesHeures) || 0,
+      maladie:      Number(i.fields.SoldeMaladieHeures)  || 0,
+      canAdmin:     !!i.fields.CanAdmin,
+      canTV:        !!i.fields.CanTV,
+      canPaye:      !!i.fields.CanPaye,
+      canAcces:     !!i.fields.CanAcces,
+      canApprouver: !!i.fields.CanApprouver,
     }));
   }
 
-  async upsertSolde({ email, nom, departement, vacances, maladie }) {
+  async upsertSolde({ email, nom, departement, vacances, maladie, canAdmin, canTV, canPaye, canAcces, canApprouver }) {
     const sid = await this._siteIdCached();
     const lid = await this._listIdForName(CONFIG.SHAREPOINT_LIST_SOLDES);
     const existing = await this.getSolde(email);
@@ -153,6 +163,11 @@ class GraphAPI {
       Departement:          departement || '',
       SoldeVacancesHeures:  Number(vacances) || 0,
       SoldeMaladieHeures:   Number(maladie)  || 0,
+      CanAdmin:             !!canAdmin,
+      CanTV:                !!canTV,
+      CanPaye:              !!canPaye,
+      CanAcces:             !!canAcces,
+      CanApprouver:         !!canApprouver,
     };
     if (existing.id) {
       return this._call(`/sites/${sid}/lists/${lid}/items/${existing.id}/fields`, {

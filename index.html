@@ -751,6 +751,9 @@
 
     .dem-admin-actions { display: flex; gap: 6px; margin-top: 10px; }
 
+    .perm-table th { white-space: nowrap; font-size: .68rem; padding: 10px 8px; }
+    .perm-table td { padding: 10px 8px; }
+
     /* ── RESPONSIVE ─────────────────────────────────────────────────────── */
     @media (max-width: 900px) {
       header { flex-wrap: wrap; height: auto; padding: 10px 16px; gap: 12px; }
@@ -799,10 +802,10 @@
     <nav class="tabs">
       <button class="tab-btn active" data-tab="statut">👤 Mon statut</button>
       <button class="tab-btn" data-tab="demandes">🏖️ Mes demandes</button>
-      <button class="tab-btn" data-tab="admin" data-admin>👥 Admin</button>
-      <button class="tab-btn" data-tab="tv"    data-admin>📺 Affichage TV</button>
-      <button class="tab-btn" data-tab="paye"  data-admin>💰 Rapport paye</button>
-      <button class="tab-btn" data-tab="acces" data-admin>🔑 Accès</button>
+      <button class="tab-btn" data-tab="admin" data-perm="canAdmin">👥 Admin</button>
+      <button class="tab-btn" data-tab="tv"    data-perm="canTV">📺 Affichage TV</button>
+      <button class="tab-btn" data-tab="paye"  data-perm="canPaye">💰 Rapport paye</button>
+      <button class="tab-btn" data-tab="acces" data-perm="canAcces">🔑 Accès</button>
     </nav>
 
     <div id="hdrClock" class="hdr-clock">
@@ -846,10 +849,10 @@
     }
   };
 </script>
-<script src="config.js?v=19"></script>
-<script src="auth.js?v=19"></script>
-<script src="graph.js?v=19"></script>
-<script src="app.js?v=19"></script>
+<script src="config.js?v=20"></script>
+<script src="auth.js?v=20"></script>
+<script src="graph.js?v=20"></script>
+<script src="app.js?v=20"></script>
 
 </body>
 </html>
