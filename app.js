@@ -203,21 +203,6 @@ const App = {
           `).join('')}
         </div>
 
-        ${history.length ? `
-          <h3>Historique récent</h3>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Date / Heure</th><th>Statut</th><th>Note</th></tr></thead>
-              <tbody>
-                ${history.slice(0, 15).map(p => `
-                  <tr>
-                    <td>${this._fmtDateTime(p.HeurePointage)}</td>
-                    <td>${p.StatutActuel}</td>
-                    <td>${p.Notes || ''}</td>
-                  </tr>`).join('')}
-              </tbody>
-            </table>
-          </div>` : ''}
       </div>`;
   },
 
