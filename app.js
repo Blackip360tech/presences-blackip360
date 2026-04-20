@@ -1060,8 +1060,8 @@ const App = {
     const jpT  = now.toLocaleTimeString('fr-CA', { timeZone: 'Asia/Tokyo',     hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
     const jpD  = now.toLocaleDateString('fr-CA', { timeZone: 'Asia/Tokyo',     weekday:'long', day:'numeric', month:'long', year:'numeric' });
     el.innerHTML = `
-      <div class="line-mtr"><span class="city">🇨🇦 Montréal</span> <span class="time">${mtrT}</span> <span class="date">${mtrD}</span></div>
-      <div class="line-jp"><span class="city">🇯🇵 Tokyo</span> <span class="time">${jpT}</span> <span class="date">${jpD}</span></div>
+      <div class="line-mtr"><span class="city"><img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f1e8-1f1e6.png" class="flag flag-lg" alt="CA"> Montréal</span> <span class="time">${mtrT}</span> <span class="date">${mtrD}</span></div>
+      <div class="line-jp"><span class="city"><img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f1ef-1f1f5.png" class="flag flag-lg" alt="JP"> Tokyo</span> <span class="time">${jpT}</span> <span class="date">${jpD}</span></div>
     `;
   },
 
@@ -1585,8 +1585,8 @@ const App = {
       const jpT  = now.toLocaleTimeString('fr-CA', { timeZone: 'Asia/Tokyo',     hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
       const jpD  = now.toLocaleDateString('fr-CA', { timeZone: 'Asia/Tokyo',     weekday:'short', day:'numeric', month:'short' });
       el.innerHTML = `
-        <div class="mtr">🇨🇦 Montréal · <b>${mtrT}</b> · ${mtrD}</div>
-        <div class="jp">🇯🇵 Tokyo · <b>${jpT}</b> · ${jpD}</div>
+        <div class="mtr"><img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f1e8-1f1e6.png" class="flag" alt="CA"> Montréal · <b>${mtrT}</b> · ${mtrD}</div>
+        <div class="jp"><img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f1ef-1f1f5.png" class="flag" alt="JP"> Tokyo · <b>${jpT}</b> · ${jpD}</div>
       `;
     };
     tick();
