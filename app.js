@@ -712,6 +712,13 @@ const App = {
             await Graph.upsertSolde(payload);
             btn.textContent = '✓';
             this.showToast('Utilisateur mis à jour', 'success');
+            // Si l'admin modifie SES PROPRES permissions, recharger et réappliquer
+            if (payload.email?.toLowerCase() === this.user.email?.toLowerCase()) {
+              this._userSolde = await Graph.getSolde(this.user.email).catch(() => this._userSolde);
+              if (this._userSolde?.departement) this.user.department = this._userSolde.departement;
+              this._checkAdmin();
+              this._renderHeader();
+            }
             setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 1500);
           } catch (err) {
             btn.textContent = '❌';
@@ -730,9 +737,13 @@ const App = {
     if (!wrap) return;
     try {
       const statuts = await Graph.getStatutsConfig().catch(() => []);
-      const rows = statuts.length ? statuts : CONFIG.STATUTS.map((s, i) => ({ ...s, ordre: i, actif: true, itemId: null }));
+      const rows = statuts.length ? statuts : this._defaultStatuts().map((s, i) => ({ ...s, ordre: i, actif: true, itemId: null }));
 
       wrap.innerHTML = `
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+          <button class="btn-secondary" id="statutsRestoreDefaults">📦 Restaurer les 12 statuts par défaut</button>
+          <span class="muted" style="font-size:.78rem;align-self:center">${statuts.length} statut(s) dans SharePoint</span>
+        </div>
         <div class="table-wrap" style="overflow-x:auto">
           <table style="min-width:900px">
             <thead>
@@ -740,7 +751,7 @@ const App = {
                 <th style="width:60px">Ordre</th>
                 <th>Identifiant</th>
                 <th>Libellé</th>
-                <th style="width:70px">Icône</th>
+                <th style="width:90px">Icône</th>
                 <th style="width:120px">Couleur</th>
                 <th>Catégorie</th>
                 <th style="width:60px">Actif</th>
@@ -754,6 +765,30 @@ const App = {
           </table>
         </div>
       `;
+
+      document.getElementById('statutsRestoreDefaults').onclick = async () => {
+        if (!confirm('Cela va créer dans SharePoint les 12 statuts par défaut (sans écraser ceux existants avec le même identifiant). Continuer ?')) return;
+        const btn = document.getElementById('statutsRestoreDefaults');
+        btn.disabled = true; btn.textContent = '⏳ Création en cours...';
+        try {
+          const existing = await Graph.getStatutsConfig().catch(() => []);
+          const existingIds = new Set(existing.map(e => e.id));
+          const defaults = this._defaultStatuts();
+          let created = 0;
+          for (const d of defaults) {
+            if (existingIds.has(d.id)) continue;
+            await Graph.createStatut({ ...d, actif: true });
+            created++;
+          }
+          this.showToast(`${created} statut(s) restauré(s)`, 'success');
+          await this._renderStatutsAdmin();
+        } catch (err) {
+          this.showToast('Erreur : ' + err.message, 'error');
+          btn.disabled = false; btn.textContent = '📦 Restaurer les 12 statuts par défaut';
+        }
+      };
+
+      this._bindEmojiPickers(wrap);
 
       wrap.querySelectorAll('.statut-save').forEach(btn => {
         btn.onclick = async () => {
@@ -817,7 +852,12 @@ const App = {
         <td><input type="number" class="s-ordre" value="${s.ordre || 0}" style="${inp};width:60px"></td>
         <td><input type="text" class="s-id" value="${s.id || ''}" placeholder="bureau" style="${inp};width:140px"></td>
         <td><input type="text" class="s-label" value="${s.label || ''}" placeholder="Je suis au bureau" style="${inp}"></td>
-        <td><input type="text" class="s-icon" value="${s.icon || ''}" placeholder="🏢" style="${inp};width:60px;font-size:1rem;text-align:center"></td>
+        <td>
+          <div style="display:flex;gap:4px;align-items:center">
+            <input type="text" class="s-icon" value="${s.icon || ''}" placeholder="🏢" style="${inp};width:50px;font-size:1rem;text-align:center">
+            <button type="button" class="icon-pick-btn" style="padding:4px 6px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--text);font-size:.8rem" title="Choisir un emoji">▼</button>
+          </div>
+        </td>
         <td><input type="color" class="s-color" value="${s.color || '#293af2'}" style="${inp};width:70px;padding:2px;cursor:pointer"></td>
         <td>
           <select class="s-cat" style="${inp};width:100px">
@@ -831,6 +871,81 @@ const App = {
           ${!s.isNew ? `<button class="btn-danger statut-del" style="padding:6px 10px;font-size:.8rem;margin-left:4px">🗑️</button>` : ''}
         </td>
       </tr>`;
+  },
+
+  _defaultStatuts() {
+    return [
+      { id: 'bureau',      label: 'Je suis là au bureau',                     icon: '🏢', color: '#198754', category: 'present' },
+      { id: 'teletravail', label: 'Je suis là en télétravail',                icon: '🏠', color: '#0dcaf0', category: 'present' },
+      { id: 'route_bip',   label: 'Client BlackIP360 - Je suis sur la route', icon: '🚗', color: '#fd7e14', category: 'present' },
+      { id: 'route_cv247', label: 'Client CV247/EMG - Je suis sur la route',  icon: '🛣️', color: '#d63384', category: 'present' },
+      { id: 'formation',   label: 'En formation',                             icon: '📚', color: '#6f42c1', category: 'present' },
+      { id: 'meeting_dnd', label: 'En meeting, ne pas déranger',              icon: '📅', color: '#c084fc', category: 'present' },
+      { id: 'quart_fini',  label: 'Quart de travail terminé',                 icon: '✅', color: '#6c757d', category: 'absent'  },
+      { id: 'rdv_perso',   label: 'Parti pour un rendez-vous personnel',      icon: '📅', color: '#20c997', category: 'absent'  },
+      { id: 'pause',       label: 'Parti en pause',                           icon: '☕', color: '#795548', category: 'absent'  },
+      { id: 'diner',       label: 'Parti en dîner',                           icon: '🍽️', color: '#ff9800', category: 'absent'  },
+      { id: 'vacances',    label: 'Parti en vacance',                         icon: '🌞', color: '#fbbf24', category: 'absent'  },
+      { id: 'malade',      label: 'Je suis Malade',                           icon: '🤒', color: '#dc3545', category: 'absent'  },
+    ];
+  },
+
+  _bindEmojiPickers(container) {
+    const EMOJIS = [
+      '🏢','🏠','🚗','🛣️','🚐','✈️','🏖️','🏥','🏫','🏭','🏬','🏪',
+      '💻','📱','🖥️','⌨️','🖱️','🖨️','💾','📞','☎️','📠','📡','📺',
+      '📚','📖','📝','✏️','📋','📊','📈','📉','📁','📂','🗂️','📑',
+      '📅','📆','⏰','⏱️','⏲️','🕐','🔔','⏳','⌛','🎯','🎪','🎬',
+      '☕','🍽️','🍕','🍔','🍟','🥗','🥤','🍺','🍷','🥂','☕','🍵',
+      '🌞','🌙','⭐','🌈','☀️','⛅','🌧️','❄️','🔥','💧','🌊','💨',
+      '✅','❌','⛔','🛑','⚠️','🚫','✔️','☑️','❎','⭕','🔴','🟢',
+      '😀','😊','😎','🤒','🤧','😷','🥴','😴','😪','🤕','🤝','👋',
+      '💼','🎓','🎖️','🏆','🥇','🎉','🎊','🎁','💡','🔑','🔒','🔓',
+      '📍','🗺️','🌍','🧭','📌','🎣','🎨','🎭','🎮','🎲','🎵','🎶',
+      '👤','👥','👨‍💻','👩‍💻','👨‍🏫','👩‍🏫','💪','🤲','👍','👎','🙏','💯',
+    ];
+
+    container.querySelectorAll('.icon-pick-btn').forEach(btn => {
+      btn.onclick = (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const tr = btn.closest('tr');
+        const input = tr.querySelector('.s-icon');
+
+        // Fermer les autres pickers ouverts
+        document.querySelectorAll('.emoji-picker-popup').forEach(p => p.remove());
+
+        const popup = document.createElement('div');
+        popup.className = 'emoji-picker-popup';
+        popup.style.cssText = 'position:absolute;z-index:1000;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;box-shadow:var(--shadow);display:grid;grid-template-columns:repeat(12,28px);gap:4px;max-width:380px;max-height:260px;overflow-y:auto';
+        popup.innerHTML = EMOJIS.map(emoji =>
+          `<button type="button" style="background:none;border:1px solid transparent;border-radius:4px;cursor:pointer;font-size:1.1rem;padding:2px;width:28px;height:28px;line-height:1" onmouseover="this.style.background='var(--surface-2)';this.style.borderColor='var(--border)'" onmouseout="this.style.background='none';this.style.borderColor='transparent'">${emoji}</button>`
+        ).join('');
+
+        const rect = btn.getBoundingClientRect();
+        popup.style.top  = (rect.bottom + window.scrollY + 4) + 'px';
+        popup.style.left = Math.max(8, Math.min(rect.left + window.scrollX - 200, window.innerWidth - 400)) + 'px';
+        document.body.appendChild(popup);
+
+        popup.querySelectorAll('button').forEach(eBtn => {
+          eBtn.onclick = (ev) => {
+            ev.preventDefault(); ev.stopPropagation();
+            input.value = eBtn.textContent;
+            popup.remove();
+          };
+        });
+
+        // Fermer au clic extérieur
+        setTimeout(() => {
+          const closeOutside = (ev) => {
+            if (!popup.contains(ev.target) && ev.target !== btn) {
+              popup.remove();
+              document.removeEventListener('click', closeOutside);
+            }
+          };
+          document.addEventListener('click', closeOutside);
+        }, 0);
+      };
+    });
   },
 
   // ── CALCUL DES HEURES TRAVAILLÉES ─────────────────────────────────────────
