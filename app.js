@@ -52,6 +52,7 @@ const App = {
     this._checkAdmin();
     this._showApp();
     this._renderHeader();
+    this._startTeamsPresencePolling();
 
     // Mode TV plein écran si ?tv=1
     const params = new URLSearchParams(window.location.search);
@@ -186,6 +187,7 @@ const App = {
             <div class="current-sub">Mon statut actuel</div>
             <div class="current-label">${current?.StatutActuel || 'Aucun statut enregistré'}</div>
             ${current ? `<div class="current-time">Depuis ${this._fmtTime(current.HeurePointage)}</div>` : ''}
+            <div id="teamsBadgeInCard" style="margin-top:10px">${this._renderTeamsBadgeHTML()}</div>
           </div>
           ${current ? '<div class="current-dot"></div>' : ''}
         </div>
@@ -1592,6 +1594,50 @@ const App = {
     tick();
     if (this._clockInterval) clearInterval(this._clockInterval);
     this._clockInterval = setInterval(tick, 1000);
+  },
+
+  // Poll la présence Teams (via Graph API /me/presence) et met à jour l'UI
+  _startTeamsPresencePolling() {
+    const fetchPresence = async () => {
+      try {
+        const p = await Graph.getMyPresence();
+        const prev = JSON.stringify(this.teamsPresence || {});
+        this.teamsPresence = {
+          availability: p.availability,
+          activity:     p.activity,
+        };
+        if (JSON.stringify(this.teamsPresence) !== prev) {
+          this._renderTeamsPresenceBadge();
+          // Re-render Mon statut si c'est l'onglet actif
+          if (this.activeTab === 'statut') {
+            const labelEl = document.getElementById('teamsBadgeInCard');
+            if (labelEl) labelEl.innerHTML = this._renderTeamsBadgeHTML();
+          }
+        }
+      } catch (err) {
+        // Silencieux — la permission Presence.Read peut ne pas être accordée
+        console.warn('[Teams] presence fetch failed:', err.message);
+      }
+    };
+    fetchPresence();
+    if (this._teamsPresenceInterval) clearInterval(this._teamsPresenceInterval);
+    this._teamsPresenceInterval = setInterval(fetchPresence, 30000); // 30s
+  },
+
+  _renderTeamsBadgeHTML() {
+    if (!this.teamsPresence) return '';
+    const key = this.teamsPresence.activity || this.teamsPresence.availability;
+    const cfg = (CONFIG.TEAMS_PRESENCE || {})[key];
+    if (!cfg) return '';
+    return `<span class="teams-badge" style="background:${cfg.color}20;color:${cfg.color};border:1px solid ${cfg.color}40">${cfg.icon} ${cfg.label}</span>`;
+  },
+
+  _renderTeamsPresenceBadge() {
+    const el = document.getElementById('teamsPresenceBadge');
+    if (!el) return;
+    const html = this._renderTeamsBadgeHTML();
+    el.innerHTML = html;
+    el.style.display = html ? 'inline-flex' : 'none';
   },
 
   _fatalError(msg) {

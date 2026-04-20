@@ -33,7 +33,25 @@ const CONFIG = {
 
   // ── Graph API ─────────────────────────────────────────────────────────────
   GRAPH_BASE: 'https://graph.microsoft.com/v1.0',
-  SCOPES: ['User.Read', 'Sites.ReadWrite.All'],
+  SCOPES: ['User.Read', 'Sites.ReadWrite.All', 'Presence.Read'],
+
+  // Mapping Teams → libellé + icône
+  TEAMS_PRESENCE: {
+    Available:              { label: 'Disponible',       icon: '🟢', color: '#2ea043' },
+    Busy:                   { label: 'Occupé',           icon: '🔴', color: '#f85149' },
+    DoNotDisturb:           { label: 'Ne pas déranger',  icon: '⛔', color: '#f85149' },
+    InACall:                { label: 'En appel',         icon: '📞', color: '#c084fc' },
+    InAConferenceCall:      { label: 'En conférence',    icon: '🎙️', color: '#c084fc' },
+    InAMeeting:             { label: 'En réunion',       icon: '📅', color: '#c084fc' },
+    Away:                   { label: 'Absent',           icon: '🌙', color: '#d29922' },
+    BeRightBack:            { label: 'Revient',          icon: '↩️', color: '#d29922' },
+    Offline:                { label: 'Hors ligne',       icon: '⚫', color: '#7d8590' },
+    PresenceUnknown:        { label: 'Inconnu',          icon: '❓', color: '#7d8590' },
+    Presenting:             { label: 'En présentation',  icon: '🎬', color: '#c084fc' },
+    UrgentInterruptionsOnly:{ label: 'Urgences seulement',icon: '🚨', color: '#f85149' },
+    OffWork:                { label: 'Hors travail',     icon: '🏠', color: '#7d8590' },
+    OutOfOffice:            { label: 'Hors du bureau',   icon: '✈️', color: '#7d8590' },
+  },
 
   // Types de congé
   TYPES_CONGE: [
