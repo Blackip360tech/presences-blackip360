@@ -1,25 +1,38 @@
-// BlackIP360 Présences — Configuration DEV
+// BlackIP360 Présences — Configuration auto DEV/PROD
+// Le suffixe _Dev est ajouté automatiquement aux listes SharePoint si on est sur l'env DEV.
+
+const IS_DEV = typeof window !== 'undefined' && (
+  window.location.hostname.includes('-dev') ||
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1'
+);
+const SP_SUFFIX = IS_DEV ? '_Dev' : '';
 
 const CONFIG = {
+
+  // ── Environnement ─────────────────────────────────────────────────────────
+  ENV:     IS_DEV ? 'dev' : 'prod',
+  IS_DEV:  IS_DEV,
 
   // ── Azure AD ──────────────────────────────────────────────────────────────
   CLIENT_ID: 'bfd6cf51-c194-4541-aa4d-2f9328b1c88a',  // BIP360-Presences_Employes
   TENANT_ID: '3f3b2d7b-6be5-45ab-bb9b-05c1a7e11c38',  // Les Solutions Blackip360 Inc.
 
   // ── Hébergement ───────────────────────────────────────────────────────────
-  APP_URL: 'https://blackip360tech.github.io/presences-blackip360-dev',
+  APP_URL: IS_DEV
+    ? 'https://blackip360tech.github.io/presences-blackip360-dev'
+    : 'https://blackip360tech.github.io/presences-blackip360',
 
   // ── SharePoint ────────────────────────────────────────────────────────────
   SHAREPOINT_HOST:      'blackip360.sharepoint.com',
   SHAREPOINT_SITE_PATH: '/sites/PlanificationTI',
-  SHAREPOINT_LIST:      'Presences_Employes',
+  SHAREPOINT_LIST:          'Presences_Employes' + SP_SUFFIX,
+  SHAREPOINT_LIST_SOLDES:   'Soldes_Conges'      + SP_SUFFIX,
+  SHAREPOINT_LIST_DEMANDES: 'Demandes_Conges'    + SP_SUFFIX,
 
   // ── Graph API ─────────────────────────────────────────────────────────────
   GRAPH_BASE: 'https://graph.microsoft.com/v1.0',
   SCOPES: ['User.Read', 'Sites.ReadWrite.All'],
-
-  SHAREPOINT_LIST_SOLDES:    'Soldes_Conges',
-  SHAREPOINT_LIST_DEMANDES:  'Demandes_Conges',
 
   // Types de congé
   TYPES_CONGE: [

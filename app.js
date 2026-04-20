@@ -108,6 +108,9 @@ const App = {
     if (ls) { ls.hidden = true; ls.style.display = 'none'; }
     const app = document.getElementById('app');
     if (app) { app.hidden = false; app.style.display = ''; }
+    // Badge DEV visible uniquement en env dev
+    const badge = document.getElementById('envBadge');
+    if (badge && CONFIG.IS_DEV) badge.hidden = false;
     this._startClock();
   },
 

@@ -141,6 +141,18 @@
     .hdr-title { line-height: 1.15; }
     .hdr-title .t1 { font-weight: 700; font-size: .95rem; }
     .hdr-title .t2 { font-size: .72rem; color: var(--muted); }
+    .env-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      background: var(--warning-bg);
+      color: var(--warning);
+      border: 1px solid var(--warning);
+      border-radius: 6px;
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      font-family: var(--mono);
+    }
 
     /* Tab nav inline in header */
     nav.tabs {
@@ -988,6 +1000,7 @@
         <div class="t1">BlackIP360</div>
         <div class="t2">Système de présences</div>
       </div>
+      <span id="envBadge" class="env-badge" hidden>DEV</span>
     </div>
 
     <nav class="tabs">
@@ -1032,10 +1045,10 @@
 <div id="toast"></div>
 
 <!-- Scripts (ordre important) -->
-<script src="config.js?v=32"></script>
-<script src="auth.js?v=32"></script>
-<script src="graph.js?v=32"></script>
-<script src="app.js?v=32"></script>
+<script src="config.js?v=33"></script>
+<script src="auth.js?v=33"></script>
+<script src="graph.js?v=33"></script>
+<script src="app.js?v=33"></script>
 
 </body>
 </html>
