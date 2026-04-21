@@ -112,7 +112,7 @@ const App = {
     } else {
       // Utilisateur normal sans entrée Soldes : aucune permission admin
       this.perms = {
-        canAdmin: false, canTV: false, canPaye: false, canAcces: false, canApprouver: false,
+        canAdmin: false, canTV: true, canPaye: false, canAcces: false, canApprouver: false,
       };
     }
     this.isAdmin = this.perms.canAdmin || this.perms.canTV || this.perms.canPaye || this.perms.canAcces || this.perms.canApprouver;
@@ -216,7 +216,7 @@ const App = {
         </div>
 
         <div class="notes-row">
-          <textarea id="notesInput" placeholder="Note optionnelle (visible par les admins)…" maxlength="200"></textarea>
+          <textarea id="notesInput" placeholder="Note optionnelle — requise uniquement pour les statuts de déplacement" maxlength="200"></textarea>
         </div>
 
         <h3>Changer mon statut</h3>
@@ -254,11 +254,25 @@ const App = {
         const needsNote = statutCfg && (statutCfg.id === 'route_bip' || statutCfg.id === 'route_cv247');
         const notesEl = document.getElementById('notesInput');
         const notesValue = notesEl?.value?.trim() || '';
-        if (needsNote && !notesValue) {
-          this.showToast('Une note est obligatoire pour ce statut (indiquer le client).', 'error');
-          notesEl?.focus();
-          return;
-        }
+if (needsNote && !notesValue) {
+  let errBanner = document.getElementById('noteErrBanner');
+  if (!errBanner) {
+    errBanner = document.createElement('div');
+    errBanner.id = 'noteErrBanner';
+    errBanner.style.cssText = 'background:rgba(248,81,73,.15);border:2px solid #f85149;color:#fca5a5;border-radius:8px;padding:10px 14px;font-size:.88rem;font-weight:600;margin-top:8px;text-align:center;animation:shake .3s ease';
+    notesEl?.parentElement?.after(errBanner);
+  } else {
+    errBanner.style.animation = 'none';
+    errBanner.offsetHeight;
+    errBanner.style.animation = 'shake .3s ease';
+  }
+  errBanner.textContent = '⚠️ Une note est obligatoire pour ce statut — indiquez le client.';
+  notesEl?.focus();
+  notesEl?.classList.add('input-error');
+  return;
+}
+document.getElementById('noteErrBanner')?.remove();
+document.getElementById('notesInput')?.classList.remove('input-error');
         await this._setStatut(statutLabel, notesValue);
       });
     });
@@ -1353,7 +1367,7 @@ if (nouveauStatut === statutActuel && nouvelleHeureISO === heureActuelle) {
         </details>
       ` : '';
 
-      el.innerHTML = this._renderAdmin(this.currentStatuses) + approvalsPlaceholder;
+      el.innerHTML = this._renderAdminHeader(this.currentStatuses) + approvalsPlaceholder;
       this._bindAdminFilters();
 
       // PHASE 2 : charger les approbations en arrière-plan
@@ -1388,7 +1402,22 @@ if (nouveauStatut === statutActuel && nouvelleHeureISO === heureActuelle) {
       el.innerHTML = `<div class="error"><strong>Erreur :</strong> ${err.message}</div>`;
     }
   },
-
+_renderAdminHeader(statuses) {
+  const presents = statuses.filter(p =>
+    CONFIG.STATUTS.find(s => s.label === p.StatutActuel)?.category === 'present'
+  );
+  const absents = statuses.filter(p =>
+    CONFIG.STATUTS.find(s => s.label === p.StatutActuel)?.category === 'absent'
+  );
+  return `
+    <div class="admin-wrap">
+      <div class="stat-row">
+        <div class="stat-card green"><div class="stat-n">${presents.length}</div><div class="stat-l">Présents</div></div>
+        <div class="stat-card red">  <div class="stat-n">${absents.length}</div> <div class="stat-l">Absents</div></div>
+        <div class="stat-card blue"> <div class="stat-n">${statuses.length}</div><div class="stat-l">Total</div></div>
+      </div>
+    </div>`;
+},
   _renderAdmin(statuses) {
     const presents = statuses.filter(p =>
       CONFIG.STATUTS.find(s => s.label === p.StatutActuel)?.category === 'present'
@@ -1575,6 +1604,7 @@ if (nouveauStatut === statutActuel && nouvelleHeureISO === heureActuelle) {
                       </div>
                     </div>
                     <div class="tv-statut-pill">${p.st.icon} ${p.StatutActuel}</div>
+                    ${p.Notes ? `<div class="tv-note">${p.Notes}</div>` : ''}
                     <div class="tv-time">Depuis ${this._fmtTime(p.HeurePointage)}</div>
                   </div>`;
               }).join('')}
