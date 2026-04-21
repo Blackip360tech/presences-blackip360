@@ -986,6 +986,13 @@
 
       .paye-legend { padding: 10px 14px; font-size: .75rem; gap: 12px; }
     }
+    @keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-7px); }
+  40%       { transform: translateX(7px); }
+  60%       { transform: translateX(-4px); }
+  80%       { transform: translateX(4px); }
+}
 
     @media (max-width: 420px) {
       .stat-row { grid-template-columns: 1fr; }
