@@ -232,17 +232,32 @@
     #userEmail { display: none; }
     #userDept { font-size: .72rem; color: var(--muted); }
 
-    #logoutBtn {
-      background: transparent;
+    .user-arrow { font-size: .65rem; color: var(--muted); margin-left: 4px; }
+    .user-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      background: var(--surface);
       border: 1px solid var(--border);
-      color: var(--text);
-      padding: 6px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: .8rem;
-      transition: background .15s;
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      z-index: 300;
+      min-width: 180px;
+      overflow: hidden;
     }
-    #logoutBtn:hover { background: var(--surface-2); }
+    .user-menu-item {
+      display: block;
+      width: 100%;
+      padding: 10px 16px;
+      background: none;
+      border: none;
+      color: var(--text);
+      text-align: left;
+      font-size: .85rem;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .user-menu-item:hover { background: var(--surface-2); color: var(--primary); }
 
     /* Content */
     main {
@@ -777,6 +792,27 @@
     .acces-card table td { padding: 8px 12px 8px 0; font-size: .88rem; }
     .acces-card td:first-child { color: var(--muted); width: 180px; }
 
+    details.acces-card > summary {
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1rem;
+      color: var(--text);
+      list-style: none;
+      padding: 4px 0;
+      user-select: none;
+    }
+    details.acces-card > summary::-webkit-details-marker { display: none; }
+    details.acces-card > summary::before {
+      content: '▶ ';
+      display: inline-block;
+      transition: transform .2s;
+      color: var(--muted);
+      margin-right: 4px;
+    }
+    details.acces-card[open] > summary::before {
+      transform: rotate(90deg);
+    }
+
     .checklist { list-style: none; padding: 0; }
     .checklist li { padding: 8px 0; padding-left: 30px; position: relative; font-size: .9rem; line-height: 1.5; }
     .checklist li::before { position: absolute; left: 0; top: 6px; font-size: 1rem; }
@@ -1041,13 +1077,19 @@
       <div class="jp">🇯🇵 Tokyo · <b>--:--</b> · —</div>
     </div>
 
-    <div class="user-chip">
-      <div class="user-avatar" id="userInitials">?</div>
-      <div class="user-details">
-        <span id="userNom">—</span>
-        <span id="userDept"></span>
+    <div class="user-chip-wrap" style="position:relative">
+      <div class="user-chip" id="userChipToggle">
+        <div class="user-avatar" id="userInitials">?</div>
+        <div class="user-details">
+          <span id="userNom">—</span>
+          <span id="userDept"></span>
+        </div>
+        <span class="user-arrow">▼</span>
       </div>
-      <button id="logoutBtn">Déconnexion</button>
+      <div class="user-menu" id="userMenu" hidden>
+        <a href="GUIDE_UTILISATEUR.html" target="_blank" class="user-menu-item">📖 Guide</a>
+        <button id="logoutBtn" class="user-menu-item">🚪 Déconnexion</button>
+      </div>
       <span id="userEmail" hidden></span>
     </div>
   </header>
@@ -1068,10 +1110,10 @@
 <div id="toast"></div>
 
 <!-- Scripts (ordre important) -->
-<script src="config.js?v=42"></script>
-<script src="auth.js?v=42"></script>
-<script src="graph.js?v=42"></script>
-<script src="app.js?v=42"></script>
+<script src="config.js?v=43"></script>
+<script src="auth.js?v=43"></script>
+<script src="graph.js?v=43"></script>
+<script src="app.js?v=43"></script>
 
 </body>
 </html>

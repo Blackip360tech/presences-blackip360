@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Guide utilisateur — BlackIP360 Présences</title>
+<style>
+  body { font-family: 'Segoe UI', system-ui, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px 40px; color: #333; line-height: 1.6; background: #f8f9ff; }
+  h1 { color: #293af2; border-bottom: 3px solid #293af2; padding-bottom: 10px; }
+  h2 { color: #293af2; margin-top: 40px; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
+  h3 { color: #1e2bc0; margin-top: 24px; }
+  code { background: #eef; padding: 2px 8px; border-radius: 4px; font-family: Consolas, monospace; font-size: .9em; color: #293af2; }
+  .tip { background: #e6f4ff; border-left: 4px solid #293af2; padding: 12px 18px; margin: 16px 0; border-radius: 4px; }
+  .warning { background: #fff0f0; border-left: 4px solid #f85149; padding: 12px 18px; margin: 16px 0; border-radius: 4px; }
+  .ok { background: #f0fff4; border-left: 4px solid #2ea043; padding: 12px 18px; margin: 16px 0; border-radius: 4px; }
+  ol li, ul li { margin: 6px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; }
+  th, td { border: 1px solid #ddd; padding: 10px 14px; text-align: left; }
+  th { background: #293af2; color: white; }
+  @media print { body { margin: 0; padding: 20px; background: white; } }
+  .header-logo { text-align: center; margin-bottom: 20px; }
+  .header-logo .box { display: inline-block; width: 64px; height: 64px; background: #293af2; border-radius: 16px; line-height: 64px; font-size: 2rem; font-weight: 900; color: #fff; }
+  .toc { background: #fff; padding: 16px 24px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+  .toc a { color: #293af2; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  kbd { background: #fff; border: 1px solid #ccc; border-bottom-width: 2px; border-radius: 4px; padding: 2px 6px; font-family: monospace; font-size: .85em; }
+</style>
+</head>
+<body>
+
+<div class="header-logo">
+  <div class="box">B</div>
+  <h1 style="border:none;margin-top:10px">Guide utilisateur</h1>
+  <p style="color:#666;margin-top:-8px">BlackIP360 — Système de présences</p>
+</div>
+
+<div class="toc">
+  <strong>📚 Table des matières</strong>
+  <ol>
+    <li><a href="#intro">Qu'est-ce que cette application ?</a></li>
+    <li><a href="#login">Se connecter</a></li>
+    <li><a href="#statut">Changer mon statut (pointer)</a></li>
+    <li><a href="#rapport">Consulter mon rapport personnel</a></li>
+    <li><a href="#conges">Demander un congé</a></li>
+    <li><a href="#modif">Modifier un pointage</a></li>
+    <li><a href="#tv">Affichage TV</a></li>
+    <li><a href="#faq">Questions fréquentes</a></li>
+  </ol>
+</div>
+
+<h2 id="intro">1. Qu'est-ce que cette application ?</h2>
+<p>BlackIP360 Présences vous permet de :</p>
+<ul>
+  <li>📍 <strong>Pointer votre statut</strong> en temps réel (au bureau, télétravail, chez un client, en pause, etc.)</li>
+  <li>🏖️ <strong>Soumettre des demandes de congé</strong> (vacances, maladie, etc.)</li>
+  <li>📊 <strong>Consulter votre rapport personnel</strong> (heures travaillées, soldes de congés)</li>
+  <li>✏️ <strong>Demander une modification</strong> si vous avez oublié ou mal pointé</li>
+</ul>
+
+<h2 id="login">2. Se connecter</h2>
+<ol>
+  <li>Ouvrez l'application dans votre navigateur</li>
+  <li>Cliquez sur <strong>"Connexion avec Microsoft 365"</strong></li>
+  <li>Entrez votre adresse <code>prenom.nom@blackip360.com</code> et votre mot de passe</li>
+  <li>Complétez l'authentification AuthPoint (MFA) si demandé</li>
+</ol>
+<div class="ok">Une fois connecté, vous restez connecté. Pas besoin de vous reconnecter à chaque fois.</div>
+
+<h2 id="statut">3. Changer mon statut (pointer)</h2>
+<p>Dans l'onglet <strong>Mon statut</strong>, vous voyez :</p>
+<ul>
+  <li>Votre statut actuel en haut</li>
+  <li>Une zone de <strong>note optionnelle</strong> (pour ajouter un contexte)</li>
+  <li>Les boutons de statut à choisir</li>
+</ul>
+
+<h3>Les statuts disponibles</h3>
+<table>
+  <thead><tr><th>Statut</th><th>Quand l'utiliser</th></tr></thead>
+  <tbody>
+    <tr><td>🏢 <strong>Je suis là au bureau</strong></td><td>Quand vous arrivez physiquement au bureau</td></tr>
+    <tr><td>🏠 <strong>Je suis là en télétravail</strong></td><td>Quand vous travaillez de la maison</td></tr>
+    <tr><td>🚗 <strong>Client BlackIP360 - Sur la route</strong></td><td>Chez un client BlackIP360 — <strong>Note du client obligatoire</strong></td></tr>
+    <tr><td>🛣️ <strong>Client CV247/EMG - Sur la route</strong></td><td>Chez un client CV247 ou EMG — <strong>Note du client obligatoire</strong></td></tr>
+    <tr><td>📚 <strong>En formation</strong></td><td>Quand vous suivez une formation</td></tr>
+    <tr><td>📅 <strong>En meeting, ne pas déranger</strong></td><td>Réunion importante, pas d'interruption</td></tr>
+    <tr><td>☕ <strong>Parti en pause</strong></td><td>Courte pause (max 15 min, 2 pauses/jour payées)</td></tr>
+    <tr><td>🍽️ <strong>Parti en dîner</strong></td><td>Dîner (non payé)</td></tr>
+    <tr><td>📅 <strong>Parti pour un rendez-vous personnel</strong></td><td>RDV médical ou personnel</td></tr>
+    <tr><td>🌞 <strong>Parti en vacance</strong></td><td>Journée de vacances (si approuvée au préalable)</td></tr>
+    <tr><td>🤒 <strong>Je suis Malade</strong></td><td>Arrêt maladie</td></tr>
+    <tr><td>✅ <strong>Quart de travail terminé</strong></td><td>Fin de votre journée — ferme vos heures</td></tr>
+  </tbody>
+</table>
+
+<div class="tip">💡 <strong>Astuce</strong> : à la fin de votre journée, cliquez toujours sur <strong>Quart de travail terminé</strong> pour que vos heures soient correctement calculées.</div>
+
+<div class="warning">⚠️ Quand vous sélectionnez un statut <strong>Client sur la route</strong>, vous devez écrire le nom du client dans la zone de note, sinon le pointage sera refusé.</div>
+
+<h3>Comment sont calculées mes heures ?</h3>
+<ul>
+  <li>Le temps entre chaque pointage = durée du statut</li>
+  <li>Les statuts <strong>présents</strong> (bureau, télétravail, client, formation, meeting) sont comptés</li>
+  <li>Les <strong>pauses</strong> sont comptées (max 30 min/jour = 2 × 15 min)</li>
+  <li>Le <strong>dîner n'est PAS payé</strong></li>
+  <li>Les <strong>absences</strong> (RDV perso, vacances, malade) ne sont pas comptées</li>
+</ul>
+
+<h2 id="rapport">4. Consulter mon rapport personnel</h2>
+<p>Dans l'onglet <strong>📊 Mon rapport</strong>, vous voyez vos heures travaillées et vos soldes.</p>
+
+<h3>Sélectionner une période</h3>
+<ul>
+  <li>Boutons rapides : Aujourd'hui, Cette semaine (par défaut), Semaine dernière, 2 dernières semaines, Ce mois, Mois dernier, Cette année</li>
+  <li>Ou choisir des dates personnalisées dans les champs <strong>Du</strong> et <strong>Au</strong></li>
+</ul>
+
+<h3>Informations affichées</h3>
+<ul>
+  <li><strong>Jours travaillés</strong> — nombre de jours où vous avez pointé un statut "présent"</li>
+  <li><strong>Heures estimées</strong> — total d'heures travaillées pendant la période</li>
+  <li><strong>Solde vacances</strong> — heures de vacances qu'il vous reste</li>
+  <li><strong>Solde maladie</strong> — heures de maladie disponibles</li>
+  <li><strong>Vacances prises</strong> — heures de vacances déjà utilisées dans la période</li>
+  <li><strong>Détail par jour</strong> — liste de tous vos pointages avec heures et icônes</li>
+</ul>
+
+<h3>Exporter / Imprimer</h3>
+<ul>
+  <li><strong>⬇ Exporter CSV</strong> — télécharge un fichier Excel compatible</li>
+  <li><strong>🖨 Imprimer</strong> — génère une version papier (utile pour garder une trace)</li>
+</ul>
+
+<h2 id="conges">5. Demander un congé</h2>
+<p>Dans l'onglet <strong>🏖️ Mes demandes</strong>, remplissez le formulaire :</p>
+
+<h3>Types de congé</h3>
+<table>
+  <thead><tr><th>Type</th><th>Impact sur mes soldes</th></tr></thead>
+  <tbody>
+    <tr><td>🌴 <strong>Vacances</strong></td><td>Déduit du solde vacances à l'approbation</td></tr>
+    <tr><td>🏠 <strong>Télé-Travail</strong></td><td>Aucun impact sur les soldes</td></tr>
+    <tr><td>📋 <strong>Sans solde</strong></td><td>Aucun impact, mais non payé</td></tr>
+    <tr><td>🤒 <strong>Maladie</strong></td><td>Déduit du solde maladie à l'approbation</td></tr>
+  </tbody>
+</table>
+
+<h3>Étapes</h3>
+<ol>
+  <li>Choisir le <strong>type de congé</strong></li>
+  <li>Entrer la <strong>date de début</strong> et <strong>date de fin</strong></li>
+  <li>Entrer le <strong>nombre d'heures</strong> (ex: 8 pour une journée, 16 pour deux jours)</li>
+  <li>Écrire un <strong>motif</strong> (optionnel mais recommandé)</li>
+  <li>Cliquer <strong>Soumettre la demande</strong></li>
+</ol>
+
+<div class="tip">💡 Votre demande apparaît avec le statut "En attente" dans <strong>Mes demandes récentes</strong>. Un administrateur l'examinera et vous recevrez une notification dans l'app quand c'est approuvé ou refusé.</div>
+
+<h2 id="modif">6. Modifier un pointage</h2>
+<p>Vous avez oublié de pointer ou mal pointé ? Pas de panique — vous pouvez demander une correction.</p>
+
+<ol>
+  <li>Allez dans <strong>📊 Mon rapport</strong></li>
+  <li>Sélectionnez la période qui contient le pointage erroné</li>
+  <li>Dans le tableau <strong>Détail par jour</strong>, cliquez sur l'icône <kbd>✏️</kbd> à côté du pointage</li>
+  <li>Choisissez le nouveau statut et/ou la nouvelle heure</li>
+  <li>Écrivez un <strong>motif</strong> (obligatoire) — ex: "Oublié de pointer la fin du quart"</li>
+  <li>Cliquez <strong>Soumettre la demande</strong></li>
+</ol>
+
+<div class="tip">💡 Votre demande de modification est envoyée à un administrateur pour approbation. Si approuvée, le pointage est modifié automatiquement.</div>
+
+<h2 id="tv">7. Affichage TV</h2>
+<p>Si vous avez accès à l'onglet <strong>📺 Affichage TV</strong>, c'est la vue temps réel des présences de toute l'équipe, organisée en groupes :</p>
+<ul>
+  <li>🏢 <strong>Au bureau</strong> (bureau + télétravail)</li>
+  <li>🚗 <strong>Chez clients</strong> (BIP360 + CV247)</li>
+  <li>📚 <strong>Formation</strong></li>
+  <li>☕ <strong>Pause / RDV</strong></li>
+  <li>🏖️ <strong>Congés</strong> (vacances + malade)</li>
+</ul>
+<p>Cet affichage se rafraîchit automatiquement toutes les 15 secondes. Idéal pour l'afficher sur un écran dans la salle commune.</p>
+
+<h2 id="faq">8. Questions fréquentes</h2>
+
+<h3>Je ne vois pas certains onglets</h3>
+<p>Les onglets <strong>Admin</strong>, <strong>Affichage TV</strong>, <strong>Rapport paye</strong> et <strong>Accès</strong> sont réservés aux administrateurs. Si vous en avez besoin, demandez à votre superviseur d'activer les permissions dans <strong>Accès → Gestion des utilisateurs</strong>.</p>
+
+<h3>J'ai oublié de pointer ce matin</h3>
+<p>Pas de problème, allez dans <strong>📊 Mon rapport</strong> et cliquez sur ✏️ pour créer un pointage rétroactif. Un admin l'approuvera.</p>
+
+<h3>Mes heures semblent fausses</h3>
+<p>Vérifiez que vous avez pointé <strong>toutes les transitions</strong> (arrivée, pauses, dîner, départ). Si vous n'avez pas pointé "Quart de travail terminé", la journée n'est pas fermée et les heures ne sont pas comptées.</p>
+
+<h3>Comment voir mes soldes de vacances ?</h3>
+<p>Dans l'onglet <strong>🏖️ Mes demandes</strong>, les 2 cartes en haut affichent vos soldes vacances et maladie à jour.</p>
+
+<h3>Est-ce que mon statut est visible par les autres ?</h3>
+<p>Oui, votre statut apparaît dans l'onglet <strong>Admin</strong> pour les administrateurs et dans l'<strong>Affichage TV</strong> pour tous ceux qui ont accès. Les notes sont visibles des admins.</p>
+
+<hr style="margin-top:50px">
+<p style="text-align:center;color:#999;font-size:.85rem">BlackIP360 — Système de présences · Guide utilisateur · 2026</p>
+
+</body>
+</html>

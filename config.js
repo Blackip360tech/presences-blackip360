@@ -49,7 +49,7 @@ const CONFIG = {
   TEAMS_ID: '667ef628-228c-4459-93fa-73fce99a58f7',
 
   // ── UI ────────────────────────────────────────────────────────────────────
-  TV_REFRESH_MS: 30000,
+  TV_REFRESH_MS: 15000,
 
   DEPARTEMENTS: [
     'Tous',

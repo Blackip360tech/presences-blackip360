@@ -166,6 +166,10 @@ const App = {
       clearInterval(this.tvClockInterval);
       this.tvClockInterval = null;
     }
+    if (tabId !== 'admin' && this._adminInterval) {
+      clearInterval(this._adminInterval);
+      this._adminInterval = null;
+    }
 
     await this.loadTab(tabId);
   },
@@ -1317,6 +1321,7 @@ const App = {
 
   // ── ADMIN ─────────────────────────────────────────────────────────────────
   async _loadAdmin() {
+    if (this._adminInterval) { clearInterval(this._adminInterval); this._adminInterval = null; }
     const el = document.getElementById('tab-admin');
     el.innerHTML = '<div class="loading">Chargement des présences…</div>';
     try {
@@ -1377,6 +1382,50 @@ const App = {
       }
     } catch (err) {
       el.innerHTML = `<div class="error"><strong>Erreur :</strong> ${err.message}</div>`;
+    }
+
+    // Auto-refresh toutes les 15s
+    if (this._adminInterval) clearInterval(this._adminInterval);
+    this._adminInterval = setInterval(() => this._refreshAdminData(), 15000);
+  },
+
+  async _refreshAdminData() {
+    if (this.activeTab !== 'admin') return;
+    try {
+      const [statuses, soldes] = await Promise.all([
+        Graph.getCurrentStatuses(),
+        Graph.getAllSoldes().catch(() => []),
+      ]);
+      const soldeMap = Object.fromEntries(soldes.map(s => [s.email?.toLowerCase(), s]));
+      this.currentStatuses = statuses.map(p => ({
+        ...p,
+        Departement: soldeMap[p.EmployeEmail?.toLowerCase()]?.departement || p.Departement,
+      }));
+      // Mettre à jour seulement la section principale sans toucher aux approbations en dessous
+      const el = document.getElementById('tab-admin');
+      if (el) {
+        // Trouver le premier h2 d'approbation pour savoir où s'arrêter
+        const approvalH2 = el.querySelector('h2[style*="margin-top:28px"]');
+        const newMainHTML = this._renderAdmin(this.currentStatuses);
+        if (approvalH2) {
+          // Remplacer tout avant l'h2 d'approbation
+          const temp = document.createElement('div');
+          temp.innerHTML = newMainHTML;
+          // Retirer tous les éléments avant approvalH2
+          while (el.firstChild && el.firstChild !== approvalH2) {
+            el.removeChild(el.firstChild);
+          }
+          // Insérer les nouveaux éléments avant approvalH2
+          while (temp.firstChild) {
+            el.insertBefore(temp.firstChild, approvalH2);
+          }
+        } else {
+          el.innerHTML = newMainHTML;
+        }
+        this._bindAdminFilters();
+      }
+    } catch (err) {
+      console.warn('[Admin] refresh failed:', err.message);
     }
   },
 
@@ -1929,22 +1978,21 @@ const App = {
         <h2>🔑 Gestion des accès</h2>
 
         ${this.isAdmin ? `
-          <div class="acces-card">
-            <h3>👥 Gestion des utilisateurs</h3>
-            <p class="muted" style="margin-bottom:14px;font-size:.85rem">
-              Assigner un département et gérer les soldes de congés pour chaque employé.
-              Les employés apparaissent automatiquement dès leur premier pointage.
+          <details class="acces-card" open>
+            <summary class="acces-summary">👥 Gestion des utilisateurs</summary>
+            <p class="muted" style="margin:14px 0;font-size:.85rem">
+              Assigner un département, des permissions et gérer les soldes de congés pour chaque employé.
             </p>
             <div id="accesSoldesWrap"><div class="loading">Chargement…</div></div>
-          </div>
+          </details>
 
-          <div class="acces-card">
-            <h3>🎨 Gestion des statuts de pointage</h3>
-            <p class="muted" style="margin-bottom:14px;font-size:.85rem">
+          <details class="acces-card" open>
+            <summary class="acces-summary">🎨 Gestion des statuts de pointage</summary>
+            <p class="muted" style="margin:14px 0;font-size:.85rem">
               Personnalisez les statuts disponibles sans modifier le code. Chaque statut apparaîtra dans "Mon statut" pour tous les employés.
             </p>
             <div id="accesStatutsWrap"><div class="loading">Chargement…</div></div>
-          </div>
+          </details>
 
           <div class="acces-card">
             <h3>📚 Documentation</h3>
@@ -1953,7 +2001,6 @@ const App = {
             </p>
             <div class="link-row">
               <a class="ext-link" href="GUIDE_ADMIN.html" target="_blank">📄 Ouvrir le guide admin (HTML)</a>
-              <a class="ext-link" href="GUIDE_ADMIN.html" target="_blank" onclick="setTimeout(()=>window.print(),500)">🖨 Imprimer en PDF</a>
             </div>
           </div>
         ` : `
@@ -2042,6 +2089,21 @@ const App = {
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   App.init();
+
+  // Menu utilisateur dropdown
+  const chipToggle = document.getElementById('userChipToggle');
+  const userMenu = document.getElementById('userMenu');
+  if (chipToggle && userMenu) {
+    chipToggle.onclick = (e) => {
+      e.stopPropagation();
+      userMenu.hidden = !userMenu.hidden;
+    };
+    document.addEventListener('click', (e) => {
+      if (!userMenu.contains(e.target) && e.target !== chipToggle && !chipToggle.contains(e.target)) {
+        userMenu.hidden = true;
+      }
+    });
+  }
 
   document.getElementById('loginBtn')?.addEventListener('click', async () => {
     try {
