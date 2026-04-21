@@ -1832,7 +1832,7 @@ _renderAdminHeader(statuses) {
       // Résumé global
       const totalEmployes = rows.filter(r => r.total > 0).length;
       const totalJours = rows.reduce((s, r) => s + r.dayStates.filter(x => x.type === 'present').length, 0);
-      const totalHeures = rows.reduce((s, r) => s + r.total, 0);
+      const totalHeures = parseFloat(rows.reduce((s, r) => s + r.total, 0).toFixed(1));
       const totalCongesPris = rows.reduce((s, r) => s + r.hVacPrises + r.hMalPrises, 0);
 
       // Header dates (pour la table)
@@ -1876,7 +1876,7 @@ _renderAdminHeader(statuses) {
       }).join('');
 
       // Totaux par jour
-      const totByDay = days.map((_, i) => rows.reduce((s, r) => s + r.dayStates[i].hours, 0));
+      const totByDay = days.map((_, i) => parseFloat(rows.reduce((s, r) => s + r.dayStates[i].hours, 0).toFixed(1)));
       const grandTotal = Math.round(totByDay.reduce((a,b) => a+b, 0) * 10) / 10;
 
       result.innerHTML = `
