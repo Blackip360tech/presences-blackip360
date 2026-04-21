@@ -88,20 +88,34 @@ const App = {
   },
 
   _checkAdmin() {
-    // Super-admins codés en dur (accès total)
+    // Super-admins codés en dur : toujours canAcces (bootstrap/safety)
     const superAdmins = ['admin@blackip360.com', 'tech@blackip360.com', 'tfournier@blackip360.com', 'sstemarie@blackip360.com'];
     const isSuper = superAdmins.includes(this.user.email?.toLowerCase());
-    const s = this._userSolde || {};
+    const s = this._userSolde;
+    const hasSoldeEntry = !!(s && s.id);
 
-    this.perms = {
-      canAdmin:     isSuper || !!s.canAdmin,
-      canTV:        isSuper || !!s.canTV,
-      canPaye:      isSuper || !!s.canPaye,
-      canAcces:     isSuper || !!s.canAcces,
-      canApprouver: isSuper || !!s.canApprouver,
-    };
-    // isAdmin = a au moins une permission admin (pour compatibilité)
-    this.isAdmin = isSuper || this.perms.canAdmin || this.perms.canTV || this.perms.canPaye || this.perms.canAcces || this.perms.canApprouver;
+    if (hasSoldeEntry) {
+      // Soldes existe : respect STRICT des cases cochées
+      // Exception : super-admins gardent canAcces pour ne pas se verrouiller
+      this.perms = {
+        canAdmin:     !!s.canAdmin,
+        canTV:        !!s.canTV,
+        canPaye:      !!s.canPaye,
+        canAcces:     isSuper || !!s.canAcces,
+        canApprouver: !!s.canApprouver,
+      };
+    } else if (isSuper) {
+      // Super-admin sans entrée Soldes : toutes permissions (bootstrap)
+      this.perms = {
+        canAdmin: true, canTV: true, canPaye: true, canAcces: true, canApprouver: true,
+      };
+    } else {
+      // Utilisateur normal sans entrée Soldes : aucune permission admin
+      this.perms = {
+        canAdmin: false, canTV: false, canPaye: false, canAcces: false, canApprouver: false,
+      };
+    }
+    this.isAdmin = this.perms.canAdmin || this.perms.canTV || this.perms.canPaye || this.perms.canAcces || this.perms.canApprouver;
 
     // Appliquer les permissions sur les éléments avec data-perm
     document.querySelectorAll('[data-perm]').forEach(el => {
