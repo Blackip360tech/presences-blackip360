@@ -316,14 +316,13 @@ document.getElementById('notesInput')?.classList.remove('input-error');
 
         <div class="solde-row">
           <div class="solde-card vac">
-            <div class="n">${solde.vacances} h</div>
+            <div class="n">${solde.vacances} h <span style="font-size:.68em;opacity:.75">/ ${this._fmtJours(solde.vacances)}</span></div>
             <div class="l">🌴 Solde vacances</div>
-            <div class="sub" style="color:var(--muted);font-size:.72rem;margin-top:4px">${this._fmtJours(solde.vacances)} · ${this._fmtSemaines(solde.vacances) || '0 sem'}</div>
+            <div class="sub" style="color:var(--muted);font-size:.72rem;margin-top:4px">${this._fmtSemaines(solde.vacances) || '0 sem'}</div>
           </div>
           <div class="solde-card mal">
-            <div class="n">${solde.maladie} h</div>
+            <div class="n">${solde.maladie} h <span style="font-size:.68em;opacity:.75">/ ${this._fmtJours(solde.maladie)}</span></div>
             <div class="l">🤒 Solde maladie</div>
-            <div class="sub" style="color:var(--muted);font-size:.72rem;margin-top:4px">${this._fmtJours(solde.maladie)}</div>
           </div>
         </div>
 
@@ -1215,8 +1214,8 @@ document.getElementById('notesInput')?.classList.remove('input-error');
         <div class="stat-row" style="margin-bottom:20px">
           <div class="stat-card blue"><div class="stat-l">Jours travaillés</div><div class="stat-n">${daysWithPresent}</div></div>
           <div class="stat-card green"><div class="stat-l">Heures estimées</div><div class="stat-n">${heuresEstimees}</div></div>
-          <div class="stat-card yellow"><div class="stat-l">🌴 Solde vacances</div><div class="stat-n">${solde.vacances} h</div><div class="stat-s">${this._fmtJours(solde.vacances)} · ${this._fmtSemaines(solde.vacances) || '0 sem'}</div></div>
-          <div class="stat-card red"><div class="stat-l">🤒 Solde maladie</div><div class="stat-n">${solde.maladie} h</div><div class="stat-s">${this._fmtJours(solde.maladie)}</div></div>
+          <div class="stat-card yellow"><div class="stat-l">🌴 Solde vacances</div><div class="stat-n">${solde.vacances} h <span style="font-size:.62em;opacity:.75">/ ${this._fmtJours(solde.vacances)}</span></div><div class="stat-s">${this._fmtSemaines(solde.vacances) || '0 sem'}</div></div>
+          <div class="stat-card red"><div class="stat-l">🤒 Solde maladie</div><div class="stat-n">${solde.maladie} h <span style="font-size:.62em;opacity:.75">/ ${this._fmtJours(solde.maladie)}</span></div></div>
           <div class="stat-card purple"><div class="stat-l">Vacances prises</div><div class="stat-n">${hVac} h</div></div>
         </div>
 
