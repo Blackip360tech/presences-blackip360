@@ -316,12 +316,11 @@ document.getElementById('notesInput')?.classList.remove('input-error');
 
         <div class="solde-row">
           <div class="solde-card vac">
-            <div class="n">${solde.vacances} h <span style="font-size:.68em;opacity:.75">/ ${this._fmtJours(solde.vacances)}</span></div>
+            <div class="n">${this._fmtJours(solde.vacances)}</div>
             <div class="l">🌴 Solde vacances</div>
-            <div class="sub" style="color:var(--muted);font-size:.72rem;margin-top:4px">${this._fmtSemaines(solde.vacances) || '0 sem'}</div>
           </div>
           <div class="solde-card mal">
-            <div class="n">${solde.maladie} h <span style="font-size:.68em;opacity:.75">/ ${this._fmtJours(solde.maladie)}</span></div>
+            <div class="n">${this._fmtJours(solde.maladie)}</div>
             <div class="l">🤒 Solde maladie</div>
           </div>
         </div>
@@ -703,8 +702,8 @@ document.getElementById('notesInput')?.classList.remove('input-error');
                 <th style="text-align:center" title="Voir le rapport paye">💰 Paye</th>
                 <th style="text-align:center" title="Gérer les utilisateurs">🔑 Accès</th>
                 <th style="text-align:center" title="Approuver demandes de congé">✓ Congés</th>
-                <th style="text-align:center">🌴 Vac.</th>
-                <th style="text-align:center">🤒 Mal.</th>
+                <th style="text-align:center" title="Solde vacances en semaines">🌴 Vac. (sem)</th>
+                <th style="text-align:center" title="Solde maladie en jours">🤒 Mal. (j)</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -726,14 +725,8 @@ document.getElementById('notesInput')?.classList.remove('input-error');
                   <td style="text-align:center"><input type="checkbox" class="perm-paye"     ${emp.canPaye      ? 'checked' : ''} style="${cbStyle}"></td>
                   <td style="text-align:center"><input type="checkbox" class="perm-acces"    ${emp.canAcces     ? 'checked' : ''} style="${cbStyle}"></td>
                   <td style="text-align:center"><input type="checkbox" class="perm-approuver"${emp.canApprouver ? 'checked' : ''} style="${cbStyle}"></td>
-                  <td style="text-align:center">
-                    <input type="number" class="solde-vac" value="${emp.vacances}" step="0.5" min="0" style="${numStyle}">
-                    <div class="muted" style="font-size:.65rem;margin-top:2px">${this._fmtJours(emp.vacances)}</div>
-                  </td>
-                  <td style="text-align:center">
-                    <input type="number" class="solde-mal" value="${emp.maladie}"  step="0.5" min="0" style="${numStyle}">
-                    <div class="muted" style="font-size:.65rem;margin-top:2px">${this._fmtJours(emp.maladie)}</div>
-                  </td>
+                  <td style="text-align:center"><input type="number" class="solde-vac-sem" value="${(emp.vacances/40).toFixed(1).replace(/\.0$/, '')}" step="0.5" min="0" style="${numStyle}"></td>
+                  <td style="text-align:center"><input type="number" class="solde-mal-j" value="${(emp.maladie/8).toFixed(1).replace(/\.0$/, '')}" step="0.5" min="0" style="${numStyle}"></td>
                   <td><button class="btn-primary solde-save">💾</button></td>
                 </tr>
               `).join('')}
@@ -759,8 +752,8 @@ document.getElementById('notesInput')?.classList.remove('input-error');
             email:        tr.dataset.email,
             nom:          tr.dataset.nom,
             departement:  tr.querySelector('.solde-dept').value,
-            vacances:     parseFloat(tr.querySelector('.solde-vac').value) || 0,
-            maladie:      parseFloat(tr.querySelector('.solde-mal').value) || 0,
+            vacances:     (parseFloat(tr.querySelector('.solde-vac-sem').value) || 0) * 40,
+            maladie:      (parseFloat(tr.querySelector('.solde-mal-j').value)   || 0) * 8,
             canAdmin:     tr.querySelector('.perm-admin').checked,
             canTV:        tr.querySelector('.perm-tv').checked,
             canPaye:      tr.querySelector('.perm-paye').checked,
@@ -1214,8 +1207,8 @@ document.getElementById('notesInput')?.classList.remove('input-error');
         <div class="stat-row" style="margin-bottom:20px">
           <div class="stat-card blue"><div class="stat-l">Jours travaillés</div><div class="stat-n">${daysWithPresent}</div></div>
           <div class="stat-card green"><div class="stat-l">Heures estimées</div><div class="stat-n">${heuresEstimees}</div></div>
-          <div class="stat-card yellow"><div class="stat-l">🌴 Solde vacances</div><div class="stat-n">${solde.vacances} h <span style="font-size:.62em;opacity:.75">/ ${this._fmtJours(solde.vacances)}</span></div><div class="stat-s">${this._fmtSemaines(solde.vacances) || '0 sem'}</div></div>
-          <div class="stat-card red"><div class="stat-l">🤒 Solde maladie</div><div class="stat-n">${solde.maladie} h <span style="font-size:.62em;opacity:.75">/ ${this._fmtJours(solde.maladie)}</span></div></div>
+          <div class="stat-card yellow"><div class="stat-l">🌴 Solde vacances</div><div class="stat-n">${this._fmtJours(solde.vacances)}</div></div>
+          <div class="stat-card red"><div class="stat-l">🤒 Solde maladie</div><div class="stat-n">${this._fmtJours(solde.maladie)}</div></div>
           <div class="stat-card purple"><div class="stat-l">Vacances prises</div><div class="stat-n">${hVac} h</div></div>
         </div>
 
