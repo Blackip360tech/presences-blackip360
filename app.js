@@ -318,10 +318,12 @@ document.getElementById('notesInput')?.classList.remove('input-error');
           <div class="solde-card vac">
             <div class="n">${solde.vacances} h</div>
             <div class="l">🌴 Solde vacances</div>
+            <div class="sub" style="color:var(--muted);font-size:.72rem;margin-top:4px">${this._fmtJours(solde.vacances)} · ${this._fmtSemaines(solde.vacances) || '0 sem'}</div>
           </div>
           <div class="solde-card mal">
             <div class="n">${solde.maladie} h</div>
             <div class="l">🤒 Solde maladie</div>
+            <div class="sub" style="color:var(--muted);font-size:.72rem;margin-top:4px">${this._fmtJours(solde.maladie)}</div>
           </div>
         </div>
 
@@ -620,6 +622,23 @@ document.getElementById('notesInput')?.classList.remove('input-error');
     }
   },
 
+  _fmtJours(h) {
+    const n = Number(h) || 0;
+    if (n === 0) return '0 j';
+    const j = n / 8;
+    if (j === Math.floor(j)) return `${j} j`;
+    if (Math.abs(j - 0.5) < 0.01) return '½ j';
+    return `${j.toFixed(1).replace('.', ',')} j`;
+  },
+
+  _fmtSemaines(h) {
+    const n = Number(h) || 0;
+    const sem = n / 40;
+    if (sem === 0) return '';
+    if (sem === Math.floor(sem)) return `${sem} sem`;
+    return `${sem.toFixed(1).replace('.', ',')} sem`;
+  },
+
   _fmtDate(iso) {
     if (!iso) return '—';
     return new Date(iso).toLocaleDateString('fr-CA', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -708,8 +727,14 @@ document.getElementById('notesInput')?.classList.remove('input-error');
                   <td style="text-align:center"><input type="checkbox" class="perm-paye"     ${emp.canPaye      ? 'checked' : ''} style="${cbStyle}"></td>
                   <td style="text-align:center"><input type="checkbox" class="perm-acces"    ${emp.canAcces     ? 'checked' : ''} style="${cbStyle}"></td>
                   <td style="text-align:center"><input type="checkbox" class="perm-approuver"${emp.canApprouver ? 'checked' : ''} style="${cbStyle}"></td>
-                  <td style="text-align:center"><input type="number" class="solde-vac" value="${emp.vacances}" step="0.5" min="0" style="${numStyle}"></td>
-                  <td style="text-align:center"><input type="number" class="solde-mal" value="${emp.maladie}"  step="0.5" min="0" style="${numStyle}"></td>
+                  <td style="text-align:center">
+                    <input type="number" class="solde-vac" value="${emp.vacances}" step="0.5" min="0" style="${numStyle}">
+                    <div class="muted" style="font-size:.65rem;margin-top:2px">${this._fmtJours(emp.vacances)}</div>
+                  </td>
+                  <td style="text-align:center">
+                    <input type="number" class="solde-mal" value="${emp.maladie}"  step="0.5" min="0" style="${numStyle}">
+                    <div class="muted" style="font-size:.65rem;margin-top:2px">${this._fmtJours(emp.maladie)}</div>
+                  </td>
                   <td><button class="btn-primary solde-save">💾</button></td>
                 </tr>
               `).join('')}
@@ -1190,8 +1215,8 @@ document.getElementById('notesInput')?.classList.remove('input-error');
         <div class="stat-row" style="margin-bottom:20px">
           <div class="stat-card blue"><div class="stat-l">Jours travaillés</div><div class="stat-n">${daysWithPresent}</div></div>
           <div class="stat-card green"><div class="stat-l">Heures estimées</div><div class="stat-n">${heuresEstimees}</div></div>
-          <div class="stat-card yellow"><div class="stat-l">🌴 Solde vacances</div><div class="stat-n">${solde.vacances} h</div></div>
-          <div class="stat-card red"><div class="stat-l">🤒 Solde maladie</div><div class="stat-n">${solde.maladie} h</div></div>
+          <div class="stat-card yellow"><div class="stat-l">🌴 Solde vacances</div><div class="stat-n">${solde.vacances} h</div><div class="stat-s">${this._fmtJours(solde.vacances)} · ${this._fmtSemaines(solde.vacances) || '0 sem'}</div></div>
+          <div class="stat-card red"><div class="stat-l">🤒 Solde maladie</div><div class="stat-n">${solde.maladie} h</div><div class="stat-s">${this._fmtJours(solde.maladie)}</div></div>
           <div class="stat-card purple"><div class="stat-l">Vacances prises</div><div class="stat-n">${hVac} h</div></div>
         </div>
 
@@ -1262,8 +1287,8 @@ document.getElementById('notesInput')?.classList.remove('input-error');
     const rows = [
       ['Rapport personnel — ' + (this.user.name || this.user.email)],
       ['Période', document.getElementById('rapFrom').value + ' au ' + document.getElementById('rapTo').value],
-      ['Solde vacances', solde.vacances + ' h'],
-      ['Solde maladie',  solde.maladie  + ' h'],
+      ['Solde vacances', `${solde.vacances} h (${this._fmtJours(solde.vacances)} · ${this._fmtSemaines(solde.vacances) || '0 sem'})`],
+      ['Solde maladie',  `${solde.maladie} h (${this._fmtJours(solde.maladie)})`],
       [],
       ['Date', 'Jour', 'Statut', 'Heure pointage', 'Heures estimées'],
     ];
@@ -1955,12 +1980,12 @@ _renderAdminHeader(statuses) {
             ${pills}
             <td class="day tot-cell">${r.total}<span class="muted" style="font-size:.72rem"> h</span></td>
             <td class="day conge-cell">
-              <div class="conge-pris" title="Vacances prises">${r.hVacPrises}h</div>
-              <div class="conge-reste muted" title="Solde restant">reste ${r.soldeVac}h</div>
+              <div class="conge-pris" title="Vacances prises">${r.hVacPrises}h ${r.hVacPrises ? `(${this._fmtJours(r.hVacPrises)})` : ''}</div>
+              <div class="conge-reste muted" title="Solde restant">reste ${r.soldeVac}h · ${this._fmtJours(r.soldeVac)}</div>
             </td>
             <td class="day conge-cell">
-              <div class="conge-pris" title="Maladie prises">${r.hMalPrises}h</div>
-              <div class="conge-reste muted" title="Solde restant">reste ${r.soldeMal}h</div>
+              <div class="conge-pris" title="Maladie prises">${r.hMalPrises}h ${r.hMalPrises ? `(${this._fmtJours(r.hMalPrises)})` : ''}</div>
+              <div class="conge-reste muted" title="Solde restant">reste ${r.soldeMal}h · ${this._fmtJours(r.soldeMal)}</div>
             </td>
           </tr>`;
       }).join('');
