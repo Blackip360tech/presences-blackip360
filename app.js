@@ -69,6 +69,13 @@ const App = {
     const tvMode = params.get('tv') === '1';
     const requestedTab = params.get('tab') || 'statut';
 
+    // Pré-chargement en arrière-plan des données communes (accès instantané aux onglets)
+    if (this.isAdmin) {
+      Graph.getAllPresences().catch(() => {});
+      Graph.getAllSoldes().catch(() => {});
+      Graph.getAllDemandes?.().catch(() => {});
+    }
+
     if (tvMode) {
       document.querySelector('header')?.setAttribute('hidden', '');
       document.querySelector('main').style.padding = '0';
@@ -180,6 +187,7 @@ const App = {
       case 'demandes': return this._loadDemandes();
       case 'rapport': return this._loadRapport();
       case 'admin':  return this._loadAdmin();
+      case 'approbations': return this._loadApprobations();
       case 'tv':     return this._loadTV();
       case 'paye':   return this._loadPaye();
       case 'acces':  return this._loadAcces();
@@ -544,7 +552,8 @@ document.getElementById('notesInput')?.classList.remove('input-error');
 
       this.showToast(`Demande ${statut.toLowerCase()} ✓`, 'success');
       // Refresh l'onglet actif
-      if (this.activeTab === 'admin') await this._loadAdmin();
+      if (this.activeTab === 'approbations') await this._loadApprobations();
+      else if (this.activeTab === 'admin') await this._loadAdmin();
       else await this._loadDemandes();
     } catch (err) {
       this.showToast('Erreur : ' + err.message, 'error');
@@ -613,7 +622,8 @@ document.getElementById('notesInput')?.classList.remove('input-error');
         notes: notes || '',
       });
       this.showToast(`Modification ${statut.toLowerCase()} ✓`, 'success');
-      if (this.activeTab === 'admin') await this._loadAdmin();
+      if (this.activeTab === 'approbations') await this._loadApprobations();
+      else if (this.activeTab === 'admin') await this._loadAdmin();
       else await this._loadDemandes();
     } catch (err) {
       this.showToast('Erreur : ' + err.message, 'error');
@@ -1404,9 +1414,24 @@ if (nouveauStatut === statutActuel && nouvelleHeureISO === heureActuelle) {
   async _loadAdmin() {
     if (this._adminInterval) { clearInterval(this._adminInterval); this._adminInterval = null; }
     const el = document.getElementById('tab-admin');
-    el.innerHTML = '<div class="loading">Chargement des présences…</div>';
+
+    // Skeleton UI immédiat (évite l'écran blanc pendant le fetch)
+    if (!this.currentStatuses?.length) {
+      el.innerHTML = `
+        <div class="stat-row">
+          <div class="stat-card green"><div class="stat-n">…</div><div class="stat-l">Présents</div></div>
+          <div class="stat-card red"><div class="stat-n">…</div><div class="stat-l">Absents</div></div>
+          <div class="stat-card blue"><div class="stat-n">…</div><div class="stat-l">Total</div></div>
+        </div>
+        <div class="loading" style="padding:24px">Chargement des présences…</div>
+      `;
+    } else {
+      // Afficher les anciennes données pendant le rafraîchissement (stale-while-revalidate)
+      el.innerHTML = this._renderAdminHeader(this.currentStatuses);
+      this._bindAdminFilters();
+    }
+
     try {
-      // PHASE 1 : afficher les statuts rapidement
       const [statuses, soldes] = await Promise.all([
         Graph.getCurrentStatuses(),
         Graph.getAllSoldes().catch(() => []),
@@ -1417,50 +1442,8 @@ if (nouveauStatut === statutActuel && nouvelleHeureISO === heureActuelle) {
         Departement: soldeMap[p.EmployeEmail?.toLowerCase()]?.departement || p.Departement,
       }));
 
-      const approvalsPlaceholder = this.perms?.canApprouver ? `
-        <h2 style="margin-top:28px">👥 Gestion des demandes — En attente</h2>
-        <div class="dem-list-card"><div id="adminDemListe"><div class="loading">Chargement des demandes…</div></div></div>
-
-        <h2 style="margin-top:28px">✏️ Modifications de pointages — En attente</h2>
-        <div class="dem-list-card"><div id="modifPointagesWrap"><div class="loading">Chargement…</div></div></div>
-
-        <details style="margin-top:16px" class="dem-list-card" id="adminHistDetails">
-          <summary style="cursor:pointer;font-weight:600;color:var(--muted);font-size:.82rem;text-transform:uppercase;letter-spacing:.5px">📜 Historique des demandes</summary>
-          <div id="adminDemHistorique" style="margin-top:14px"><div class="loading">…</div></div>
-        </details>
-      ` : '';
-
-      el.innerHTML = this._renderAdminHeader(this.currentStatuses) + approvalsPlaceholder;
+      el.innerHTML = this._renderAdminHeader(this.currentStatuses);
       this._bindAdminFilters();
-
-      // PHASE 2 : charger les approbations en arrière-plan
-      if (this.perms?.canApprouver) {
-        Graph.getAllDemandes().then(toutesDemandes => {
-          const attente    = (toutesDemandes || []).filter(d => (d.Statut || '').trim() === 'En attente');
-          const historique = (toutesDemandes || []).filter(d => (d.Statut || '').trim() && (d.Statut || '').trim() !== 'En attente');
-
-          const demEl  = document.getElementById('adminDemListe');
-          const histEl = document.getElementById('adminDemHistorique');
-          const detEl  = document.getElementById('adminHistDetails');
-          if (demEl)  demEl.innerHTML  = this._renderDemandesListe(attente, true);
-          if (histEl) histEl.innerHTML = this._renderDemandesListe(historique, false);
-          if (detEl)  detEl.querySelector('summary').innerHTML = `📜 Historique des demandes (${historique.length})`;
-          const titleH2 = el.querySelector('h2[style*="margin-top:28px"]');
-          if (titleH2) titleH2.textContent = `👥 Gestion des demandes — En attente (${attente.length})`;
-
-          el.querySelectorAll('[data-approve]').forEach(btn =>
-            btn.onclick = () => this._decideDemande(btn.dataset.approve, 'Approuvée')
-          );
-          el.querySelectorAll('[data-refuse]').forEach(btn =>
-            btn.onclick = () => this._decideDemande(btn.dataset.refuse, 'Refusée')
-          );
-        }).catch(err => {
-          const demEl = document.getElementById('adminDemListe');
-          if (demEl) demEl.innerHTML = `<div class="error">Erreur : ${err.message}</div>`;
-        });
-
-        this._renderModifPointagesAdmin();
-      }
     } catch (err) {
       el.innerHTML = `<div class="error"><strong>Erreur :</strong> ${err.message}</div>`;
     }
@@ -1468,6 +1451,60 @@ if (nouveauStatut === statutActuel && nouvelleHeureISO === heureActuelle) {
     // Auto-refresh toutes les 15s
     if (this._adminInterval) clearInterval(this._adminInterval);
     this._adminInterval = setInterval(() => this._refreshAdminData(), 15000);
+  },
+
+  // ── APPROBATIONS (ancienne section Admin) ────────────────────────────────
+  async _loadApprobations() {
+    const el = document.getElementById('tab-approbations');
+    if (!this.perms?.canApprouver) {
+      el.innerHTML = `<div class="acces-card"><p class="muted">Cette section est réservée aux utilisateurs avec la permission "Approuver les demandes".</p></div>`;
+      return;
+    }
+
+    el.innerHTML = `
+      <h2>✅ Approbations</h2>
+      <p class="muted" style="margin-bottom:20px;font-size:.85rem">Approuvez ou refusez les demandes de congé et les modifications de pointages soumises par les employés.</p>
+
+      <h3 style="margin-top:20px">🏖️ Demandes de congé — En attente</h3>
+      <div class="dem-list-card"><div id="approbDemListe"><div class="loading">Chargement…</div></div></div>
+
+      <h3 style="margin-top:20px">✏️ Modifications de pointages — En attente</h3>
+      <div class="dem-list-card"><div id="modifPointagesWrap"><div class="loading">Chargement…</div></div></div>
+
+      <details style="margin-top:20px" class="dem-list-card" id="approbHistDetails">
+        <summary style="cursor:pointer;font-weight:600;color:var(--muted);font-size:.82rem;text-transform:uppercase;letter-spacing:.5px">📜 Historique des demandes</summary>
+        <div id="approbDemHistorique" style="margin-top:14px"><div class="loading">…</div></div>
+      </details>
+    `;
+
+    try {
+      const toutesDemandes = await Graph.getAllDemandes();
+      const attente    = (toutesDemandes || []).filter(d => (d.Statut || '').trim() === 'En attente');
+      const historique = (toutesDemandes || []).filter(d => (d.Statut || '').trim() && (d.Statut || '').trim() !== 'En attente');
+
+      const demEl  = document.getElementById('approbDemListe');
+      const histEl = document.getElementById('approbDemHistorique');
+      const detEl  = document.getElementById('approbHistDetails');
+      if (demEl)  demEl.innerHTML  = this._renderDemandesListe(attente, true);
+      if (histEl) histEl.innerHTML = this._renderDemandesListe(historique, false);
+      if (detEl)  detEl.querySelector('summary').innerHTML = `📜 Historique des demandes (${historique.length})`;
+
+      // Update le compteur dans le h3
+      const demH3 = el.querySelector('h3:nth-of-type(1)');
+      if (demH3) demH3.textContent = `🏖️ Demandes de congé — En attente (${attente.length})`;
+
+      el.querySelectorAll('[data-approve]').forEach(btn =>
+        btn.onclick = () => this._decideDemande(btn.dataset.approve, 'Approuvée')
+      );
+      el.querySelectorAll('[data-refuse]').forEach(btn =>
+        btn.onclick = () => this._decideDemande(btn.dataset.refuse, 'Refusée')
+      );
+    } catch (err) {
+      const demEl = document.getElementById('approbDemListe');
+      if (demEl) demEl.innerHTML = `<div class="error">Erreur : ${err.message}</div>`;
+    }
+
+    this._renderModifPointagesAdmin();
   },
 
   async _refreshAdminData() {
